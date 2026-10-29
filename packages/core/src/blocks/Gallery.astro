@@ -1,0 +1,45 @@
+---
+/**
+ * Gallery (Reference) – mreža slik z napisi. Slike so lazy, z mere (brez CLS).
+ */
+import { Image } from 'astro:assets';
+import type { ImageInput } from '../types.ts';
+
+interface Props {
+  id?: string;
+  eyebrow?: string;
+  title: string;
+  intro?: string;
+  images: Array<ImageInput & { caption?: string }>;
+}
+
+const { id = 'galerija', eyebrow, title, intro, images } = Astro.props;
+---
+
+<section id={id} class="bg-surface py-section" aria-labelledby={`${id}-title`}>
+  <div class="wrap">
+    <div class="max-w-measure">
+      {eyebrow && <p class="eyebrow mb-3">{eyebrow}</p>}
+      <h2 id={`${id}-title`} class="text-3xl font-bold">{title}</h2>
+      {intro && <p class="mt-4 text-lg text-on-surface-muted">{intro}</p>}
+    </div>
+    <ul class="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {
+        images.map((img) => (
+          <li>
+            <figure>
+              <Image
+                src={img.src}
+                alt={img.alt}
+                widths={[400, 600, 800]}
+                sizes="(min-width: 64rem) 23rem, (min-width: 40rem) 50vw, 100vw"
+                class="aspect-4/3 w-full rounded-md object-cover"
+              />
+              {img.caption && <figcaption class="mt-2 text-sm text-on-surface-muted">{img.caption}</figcaption>}
+            </figure>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</section>

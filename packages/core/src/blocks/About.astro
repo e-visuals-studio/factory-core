@@ -1,0 +1,56 @@
+---
+/**
+ * About (O nas) – besedilo (slot ali `text`), slika in opcijske številke.
+ */
+import { Image } from 'astro:assets';
+import type { ImageInput } from '../types.ts';
+
+interface Props {
+  id?: string;
+  eyebrow?: string;
+  title: string;
+  text?: string;
+  image?: ImageInput;
+  stats?: Array<{ value: string; label: string }>;
+  /** Slika levo namesto desno. */
+  reverse?: boolean;
+}
+
+const { id = 'o-nas', eyebrow, title, text, image, stats = [], reverse = false } = Astro.props;
+---
+
+<section id={id} class="bg-surface py-section" aria-labelledby={`${id}-title`}>
+  <div class:list={['wrap grid items-center gap-12', image && 'lg:grid-cols-2']}>
+    <div class:list={[reverse && 'lg:order-2']}>
+      {eyebrow && <p class="eyebrow mb-3">{eyebrow}</p>}
+      <h2 id={`${id}-title`} class="text-3xl font-bold">{title}</h2>
+      <div class="prose-factory mt-6 text-on-surface-muted">
+        {text && <p>{text}</p>}
+        <slot />
+      </div>
+      {
+        stats.length > 0 && (
+          <dl class="mt-10 grid grid-cols-2 gap-6 sm:grid-cols-3">
+            {stats.map((stat) => (
+              <div class="flex flex-col border-l-2 border-accent pl-4">
+                <dt class="text-sm text-on-surface-muted">{stat.label}</dt>
+                <dd class="order-first text-3xl font-bold text-primary">{stat.value}</dd>
+              </div>
+            ))}
+          </dl>
+        )
+      }
+    </div>
+    {
+      image && (
+        <Image
+          src={image.src}
+          alt={image.alt}
+          widths={[480, 720, 960]}
+          sizes="(min-width: 64rem) 36rem, 100vw"
+          class="aspect-square w-full rounded-lg object-cover"
+        />
+      )
+    }
+  </div>
+</section>

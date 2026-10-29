@@ -1,0 +1,151 @@
+---
+import BaseLayout from '@e-visuals-studio/core/layouts/BaseLayout.astro';
+import Header from '@e-visuals-studio/core/blocks/Header.astro';
+import Hero from '@e-visuals-studio/core/blocks/Hero.astro';
+import Features from '@e-visuals-studio/core/blocks/Features.astro';
+import About from '@e-visuals-studio/core/blocks/About.astro';
+import Gallery from '@e-visuals-studio/core/blocks/Gallery.astro';
+import CTA from '@e-visuals-studio/core/blocks/CTA.astro';
+import FAQ from '@e-visuals-studio/core/blocks/FAQ.astro';
+import BlogList from '@e-visuals-studio/core/blocks/BlogList.astro';
+import Contact from '@e-visuals-studio/core/blocks/Contact.astro';
+import Footer from '@e-visuals-studio/core/blocks/Footer.astro';
+import { graph, localBusiness, website } from '@e-visuals-studio/core';
+import { cta, footer, nav, site } from '../site';
+import { getPostItems } from '../lib/posts';
+import hero from '../assets/placeholders/hero.jpg';
+import about from '../assets/placeholders/about.jpg';
+import g1 from '../assets/placeholders/gallery-1.jpg';
+import g2 from '../assets/placeholders/gallery-2.jpg';
+import g3 from '../assets/placeholders/gallery-3.jpg';
+import g4 from '../assets/placeholders/gallery-4.jpg';
+import g5 from '../assets/placeholders/gallery-5.jpg';
+import g6 from '../assets/placeholders/gallery-6.jpg';
+
+const url = Astro.site!;
+const posts = await getPostItems(3);
+const alternates = [
+  { hreflang: 'sl', href: '/' },
+  { hreflang: 'en', href: '/en/' },
+  { hreflang: 'x-default', href: '/' },
+];
+---
+
+<BaseLayout
+  title={`${site.name} – pohištvo po meri iz masivnega lesa`}
+  titleTemplate="%s"
+  description={site.description}
+  siteName={site.name}
+  image={hero}
+  imageAlt="Mizarstvo Primer"
+  alternates={alternates}
+  jsonLd={graph(
+    website({ name: site.name, url, inLanguage: ['sl', 'en'] }),
+    localBusiness({
+      type: 'HomeAndConstructionBusiness',
+      name: site.name,
+      url,
+      description: site.description,
+      email: site.email,
+      telephone: site.phone,
+      address: site.address,
+      openingHours: ['Mo-Fr 07:00-15:00'],
+      areaServed: 'Osrednjeslovenska regija',
+    }),
+  )}
+>
+  <Header
+    slot="header"
+    siteName={site.name}
+    nav={nav}
+    cta={cta}
+    languageSwitch={{ label: 'EN', href: '/en/', hreflang: 'en', title: 'English' }}
+  />
+
+  <Hero
+    eyebrow="Mizarstvo v Kamniku od leta 1998"
+    title="Pohištvo po meri, ki zdrži generacije"
+    lead="Kuhinje, vgradne omare in jedilne mize iz masivnega lesa. Izmerimo, izrišemo, izdelamo in montiramo sami."
+    image={{ src: hero, alt: 'Placeholder za fotografijo kuhinje iz hrastovega lesa' }}
+    primaryCta={cta}
+    secondaryCta={{ label: 'Oglejte si reference', href: '#galerija' }}
+  />
+
+  <Features
+    eyebrow="Storitve"
+    title="Od skice do montaže"
+    intro="Vse naredimo v lastni delavnici, zato imate en kontakt in en rok."
+    items={[
+      { title: 'Kuhinje po meri', text: 'Fronte iz masivnega lesa ali furnirja, pulti iz lesa, kamna ali kompaktnih plošč.' },
+      { title: 'Vgradne omare', text: 'Garderobe, omare pod stopnicami in v mansardah, z izkoriščenim vsakim centimetrom.' },
+      { title: 'Jedilne mize', text: 'Mize iz enega kosa lesa, z jeklenim ali lesenim podnožjem, po vaših merah.' },
+      { title: 'Notranja vrata', text: 'Vrata in podboji, usklajeni s pohištvom in talnimi oblogami.' },
+      { title: 'Obnova pohištva', text: 'Brušenje, oljenje in popravila starejšega masivnega pohištva.' },
+      { title: '3D izris', text: 'Pred izdelavo vidite pohištvo v svojem prostoru in ga po potrebi spremenimo.' },
+    ]}
+  />
+
+  <About
+    eyebrow="O nas"
+    title="Družinska delavnica s tremi generacijami izkušenj"
+    image={{ src: about, alt: 'Placeholder za fotografijo ekipe v delavnici' }}
+    stats={[
+      { value: '25+', label: 'let izkušenj' },
+      { value: '600+', label: 'izdelanih kuhinj' },
+      { value: '5 let', label: 'garancije' },
+    ]}
+  >
+    <p>Les izbiramo pri lokalnih žagah, sušimo ga sami in ga obdelujemo z olji brez topil.</p>
+    <p>Vsak projekt vodi en mizar, od prve izmere do montaže. <em>Vzorčno besedilo za playground.</em></p>
+  </About>
+
+  <Gallery
+    eyebrow="Reference"
+    title="Izbrani projekti"
+    images={[
+      { src: g1, alt: 'Placeholder: kuhinja iz hrasta', caption: 'Kuhinja, Domžale' },
+      { src: g2, alt: 'Placeholder: vgradna omara v mansardi', caption: 'Mansardna garderoba, Kamnik' },
+      { src: g3, alt: 'Placeholder: jedilna miza iz oreha', caption: 'Jedilna miza, Ljubljana' },
+      { src: g4, alt: 'Placeholder: notranja vrata', caption: 'Notranja vrata, Mengeš' },
+      { src: g5, alt: 'Placeholder: knjižna polica', caption: 'Knjižna stena, Komenda' },
+      { src: g6, alt: 'Placeholder: obnovljena skrinja', caption: 'Obnova skrinje, Kranj' },
+    ]}
+  />
+
+  <CTA
+    title="Imate prostor, ki potrebuje pravo pohištvo?"
+    text="Pošljite tloris ali nekaj fotografij. V treh delovnih dneh vam pošljemo okvirno ponudbo."
+    cta={cta}
+    secondary={{ label: `Pokličite ${site.phone}`, href: `tel:${site.phone.replace(/[^\d+]/g, '')}` }}
+  />
+
+  <FAQ
+    eyebrow="Vprašanja"
+    title="Pogosta vprašanja"
+    items={[
+      { question: 'Koliko časa traja izdelava kuhinje?', answer: 'Običajno 6 do 8 tednov od potrjenega izrisa do montaže.' },
+      { question: 'Ali pridete na izmero?', answer: 'Da, izmera v Osrednjeslovenski regiji je brezplačna.' },
+      { question: 'Kakšna je garancija?', answer: 'Na izdelke in montažo dajemo 5 let garancije.' },
+      { question: 'Ali delate tudi z ivernimi ploščami?', answer: 'Da, za korpuse pogosto uporabimo kakovostne plošče, fronte pa iz masivnega lesa ali furnirja.' },
+    ]}
+  />
+
+  <BlogList eyebrow="Blog" title="Nasveti in novice" posts={posts} more={{ label: 'Vsi prispevki', href: '/blog/' }} />
+
+  <Contact
+    eyebrow="Kontakt"
+    title="Pišite nam"
+    intro="Odgovorimo v enem delovnem dnevu."
+    email={site.email}
+    phone={site.phone}
+    address={site.address}
+    openingHours={site.openingHours}
+    form={{
+      action: '/api/contact',
+      privacyHref: '/zasebnost/',
+      services: ['Kuhinja', 'Vgradna omara', 'Jedilna miza', 'Drugo'],
+    }}
+  />
+
+  <Footer slot="footer" siteName={site.name} {...footer} />
+</BaseLayout>

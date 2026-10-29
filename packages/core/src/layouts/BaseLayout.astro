@@ -1,0 +1,48 @@
+---
+/**
+ * <BaseLayout> – ogrodje vsake strani: <html lang>, <SEO>, fonti, tema iz tokenov, skip link in <main>.
+ * Sloti: `header`, privzeti (vsebina v <main>), `footer`, `head` (dodatne oznake v <head>).
+ */
+import { Font } from 'astro:assets';
+import config from 'virtual:factory/config';
+import 'virtual:factory/theme.css';
+import SEO, { type SEOProps } from '../seo/SEO.astro';
+
+export interface Props extends SEOProps {
+  /** Besedilo povezave za preskok na vsebino. */
+  skipLinkLabel?: string;
+}
+
+const { skipLinkLabel, ...seo } = Astro.props;
+const lang = seo.lang ?? config.i18n?.defaultLocale ?? 'sl';
+const skipLabel = skipLinkLabel ?? (lang === 'sl' ? 'Preskoči na vsebino' : 'Skip to content');
+---
+
+<!doctype html>
+<html lang={lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="generator" content={Astro.generator} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    {
+      config.fontRoles.map((role) => (
+        <Font
+          cssVariable={`--factory-font-${role}`}
+          preload={config.preloadFonts.includes(role) ? [{ style: 'normal', subset: 'latin' }] : false}
+        />
+      ))
+    }
+    <SEO {...seo} lang={lang} />
+    {config.rss && <link rel="alternate" type="application/rss+xml" title={config.rss.title} href="/rss.xml" />}
+    <slot name="head" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">{skipLabel}</a>
+    <slot name="header" />
+    <main id="main">
+      <slot />
+    </main>
+    <slot name="footer" />
+  </body>
+</html>

@@ -1,0 +1,36 @@
+# CLAUDE.md – factory-core
+
+Jedro Website Factory. Celoten plan: `WEBSITE_FACTORY_PLAN.md` (preberi ga pred vsako fazo).
+Struktura in ukazi: `README.md`. Node ≥ 22.12 (`nvm use`), pnpm prek corepacka.
+
+## Pravila
+
+**Design samo iz tokenov**
+- Barve, fonti, velikosti, razmiki, radiji, sence in animacije pridejo samo iz `tokens.json` (razredi kot `bg-primary`, `text-on-surface-muted`, `py-section`, `max-w-measure`, `duration-base`, `ease-standard`).
+- Nikoli hex/rgb/oklch vrednosti, Tailwind arbitrary vrednosti (`p-[13px]`), privzetih palet (`bg-blue-500`, `text-white`) ali inline `style`. Manjka vrednost? Dodaj token v `tokens.default.json` (in v `playground/tokens.json`), ne obidi ga.
+- Pari `on-<ozadje>` morajo imeti kontrast ≥ 4.5 : 1; build sicer pade.
+
+**Slike in avtorske pravice**
+- Nikoli ne prenašaj slik s spleta in ne vstavljaj URL-jev tujih slik (tudi ne Unsplash/Pexels brez zapisa v registru).
+- Med razvojem samo generirani placeholderji (`pnpm --filter playground placeholders`). Manjkajoča prava slika = placeholder + TODO.
+- Vsaka slika ima zapis v `assets.licenses.yaml`; slike v content kolekcijah imajo obvezna polja `src`, `alt`, `avtor`, `vir`, `licenca` (`licensedImageSchema`).
+- Slike samo prek `<Image>` iz `astro:assets`; LCP slika s `priority`, ostale lazy.
+
+**Komponente in strani**
+- Vsaka stran uporablja `<BaseLayout>` (ta vključi `<SEO>`): title, description (50–160 znakov), en `<h1>` na stran.
+- Nove komponente najprej kot blok v `packages/core/src/blocks/`; stilirane samo s tokeni, brez JavaScripta (interaktivnost samo kot Astro island z razlogom).
+- Nobenih izmišljenih podatkov o stranki (naslovi, telefoni, številke, reference) – manjkajoče označi s TODO.
+
+**Jezik**
+- Besedila na straneh, komentarji v kodi, commit sporočila in PR opisi so v slovenščini.
+
+**Odprta koda**
+- Nove odvisnosti samo z OSI licenco (MIT, Apache-2.0, BSD, ISC, MPL-2.0). Izjeme gredo v `EXCEPTIONS.md`.
+
+## Pred commitom
+
+```sh
+pnpm build && pnpm check:tokens
+```
+
+Oboje mora uspeti. Pri spremembah blokov, layouta ali fontov poženi še `pnpm check` in `pnpm lighthouse` (≥ 95 v vseh kategorijah, mobilno).

@@ -1,0 +1,11 @@
+packages:
+  - packages/*
+  - playground
+
+# Varnost dobavne verige (glej WEBSITE_FACTORY_PLAN.md, Varnost):
+# nove verzije paketov namestimo šele po 3 dneh, postinstall skripti so privzeto blokirani.
+minimumReleaseAge: 4320
+onlyBuiltDependencies:
+  - esbuild
+ignoredBuiltDependencies:
+  - sharp

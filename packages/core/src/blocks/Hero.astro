@@ -1,0 +1,49 @@
+---
+/**
+ * Hero – edini <h1> na strani. Slika je LCP element: priority (eager + fetchpriority="high"), brez animacije.
+ */
+import { Image } from 'astro:assets';
+import type { ImageInput, LinkItem } from '../types.ts';
+
+interface Props {
+  title: string;
+  lead?: string;
+  eyebrow?: string;
+  image?: ImageInput;
+  primaryCta?: LinkItem;
+  secondaryCta?: LinkItem;
+}
+
+const { title, lead, eyebrow, image, primaryCta, secondaryCta } = Astro.props;
+---
+
+<section class="bg-surface py-section" aria-labelledby="hero-title">
+  <div class:list={['wrap grid items-center gap-12', image && 'lg:grid-cols-2']}>
+    <div class="max-w-measure">
+      {eyebrow && <p class="eyebrow mb-4">{eyebrow}</p>}
+      <h1 id="hero-title" class="text-4xl font-bold text-on-surface">{title}</h1>
+      {lead && <p class="mt-6 text-lg text-on-surface-muted">{lead}</p>}
+      {
+        (primaryCta || secondaryCta) && (
+          <div class="mt-10 flex flex-wrap gap-4">
+            {primaryCta && <a href={primaryCta.href} class="btn btn-primary">{primaryCta.label}</a>}
+            {secondaryCta && <a href={secondaryCta.href} class="btn btn-secondary">{secondaryCta.label}</a>}
+          </div>
+        )
+      }
+      <slot />
+    </div>
+    {
+      image && (
+        <Image
+          src={image.src}
+          alt={image.alt}
+          widths={[480, 720, 960, 1280]}
+          sizes="(min-width: 64rem) 36rem, 100vw"
+          priority
+          class="aspect-4/3 w-full rounded-lg object-cover shadow-card"
+        />
+      )
+    }
+  </div>
+</section>

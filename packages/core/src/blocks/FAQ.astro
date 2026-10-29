@@ -1,0 +1,47 @@
+---
+/**
+ * FAQ – <details>/<summary> brez JavaScripta. Privzeto doda FAQPage JSON-LD.
+ */
+import { faqPage, serializeJsonLd, type FaqItem } from '../seo/jsonld.ts';
+
+interface Props {
+  id?: string;
+  eyebrow?: string;
+  title: string;
+  intro?: string;
+  items: FaqItem[];
+  /** FAQPage JSON-LD; izklopi, če ga stran že doda v <SEO jsonLd>. */
+  schema?: boolean;
+}
+
+const { id = 'faq', eyebrow, title, intro, items, schema = true } = Astro.props;
+---
+
+<section id={id} class="bg-surface-alt py-section" aria-labelledby={`${id}-title`}>
+  <div class="wrap grid gap-12 lg:grid-cols-3">
+    <div>
+      {eyebrow && <p class="eyebrow mb-3">{eyebrow}</p>}
+      <h2 id={`${id}-title`} class="text-3xl font-bold">{title}</h2>
+      {intro && <p class="mt-4 text-lg text-on-surface-muted">{intro}</p>}
+    </div>
+    <div class="divide-y divide-border border-y border-border lg:col-span-2">
+      {
+        items.map((item) => (
+          <details class="group py-2" name={`${id}-items`}>
+            <summary class="flex items-center justify-between gap-6 py-4 text-lg font-semibold">
+              {item.question}
+              <span
+                aria-hidden="true"
+                class="text-2xl leading-none text-primary transition-transform duration-base ease-standard group-open:rotate-45"
+              >
+                +
+              </span>
+            </summary>
+            <div class="pb-4 text-on-surface-muted" set:html={item.answer} />
+          </details>
+        ))
+      }
+    </div>
+  </div>
+  {schema && <script is:inline type="application/ld+json" set:html={serializeJsonLd(faqPage(items))} />}
+</section>

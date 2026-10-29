@@ -1,0 +1,65 @@
+---
+import BaseLayout from '@e-visuals-studio/core/layouts/BaseLayout.astro';
+import Header from '@e-visuals-studio/core/blocks/Header.astro';
+import Hero from '@e-visuals-studio/core/blocks/Hero.astro';
+import Features from '@e-visuals-studio/core/blocks/Features.astro';
+import CTA from '@e-visuals-studio/core/blocks/CTA.astro';
+import Footer from '@e-visuals-studio/core/blocks/Footer.astro';
+import { site } from '../../site';
+import hero from '../../assets/placeholders/hero.jpg';
+
+const alternates = [
+  { hreflang: 'sl', href: '/' },
+  { hreflang: 'en', href: '/en/' },
+  { hreflang: 'x-default', href: '/' },
+];
+const nav = [
+  { label: 'Services', href: '/en/#services' },
+  { label: 'Contact', href: '/en/#contact' },
+];
+const cta = { label: 'Get a quote', href: '/en/#contact' };
+---
+
+<BaseLayout
+  lang="en"
+  title="Mizarstvo Primer – custom solid wood furniture"
+  titleTemplate="%s"
+  description="A family joinery workshop in Kamnik, Slovenia: custom kitchens, built-in wardrobes and solid wood furniture."
+  siteName={site.name}
+  image={hero}
+  alternates={alternates}
+>
+  <Header
+    slot="header"
+    siteName={site.name}
+    homeHref="/en/"
+    nav={nav}
+    cta={cta}
+    menuLabel="Menu"
+    navLabel="Main navigation"
+    languageSwitch={{ label: 'SL', href: '/', hreflang: 'sl', title: 'Slovenščina' }}
+  />
+
+  <Hero
+    eyebrow="Joinery in Kamnik since 1998"
+    title="Custom furniture built to last generations"
+    lead="Kitchens, built-in wardrobes and dining tables made from solid wood. We measure, design, build and install."
+    image={{ src: hero, alt: 'Placeholder for a photo of an oak kitchen' }}
+    primaryCta={cta}
+  />
+
+  <Features
+    id="services"
+    eyebrow="Services"
+    title="From sketch to installation"
+    items={[
+      { title: 'Custom kitchens', text: 'Solid wood or veneer fronts, worktops in wood, stone or compact laminate.' },
+      { title: 'Built-in wardrobes', text: 'Walk-in closets, under-stair and attic storage that uses every centimetre.' },
+      { title: 'Dining tables', text: 'Single-slab tables with steel or wooden bases, made to your size.' },
+    ]}
+  />
+
+  <CTA id="contact" title="Have a space that needs the right furniture?" cta={{ label: site.email, href: `mailto:${site.email}` }} />
+
+  <Footer slot="footer" siteName={site.name} tagline="Custom solid wood furniture from Kamnik, Slovenia." />
+</BaseLayout>

@@ -1,0 +1,10 @@
+# Register licenc (glej WEBSITE_FACTORY_PLAN.md, Avtorske pravice). Vsaka slika v repu mora imeti zapis.
+- file: src/assets/placeholders/*.jpg
+  source: generated
+  author: scripts/gen-placeholders.ts
+  license: none-required
+  note: Barvni placeholderji iz tokens.json, brez tujih vsebin.
+- file: public/favicon.svg
+  source: generated
+  author: e-visuals
+  license: none-required
