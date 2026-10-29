@@ -32,6 +32,7 @@
     "./layouts/*": "./src/layouts/*",
     "./blocks/*": "./src/blocks/*",
     "./seo/*": "./src/seo/*",
+    "./analytics/*": "./src/analytics/*",
     "./tokens.default.json": "./tokens.default.json"
   },
   "bin": {
@@ -57,7 +58,8 @@
     "@tailwindcss/vite": "^4.3.3",
     "satori": "^0.63.2",
     "sharp": "^0.34.5",
-    "tailwindcss": "^4.3.3"
+    "tailwindcss": "^4.3.3",
+    "vanilla-cookieconsent": "^3.1.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

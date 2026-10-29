@@ -1,7 +1,10 @@
 ---
 /**
  * Footer – ime, kratek opis, stolpci povezav, kontakt in pravne povezave.
+ * Pri GA4 doda gumb »Nastavitve piškotkov«, ki znova odpre banner (vanilla-cookieconsent, `data-cc`).
  */
+import config from 'virtual:factory/config';
+import { cookieSettingsLabels, type ConsentLang } from '../analytics/consent-i18n.ts';
 import type { LinkItem } from '../types.ts';
 
 interface Props {
@@ -12,10 +15,17 @@ interface Props {
   /** Pravni podatki podjetja (naziv, matična, davčna). */
   companyInfo?: string;
   copyrightName?: string;
+  /** Besedilo gumba za nastavitve piškotkov (samo pri GA4). Privzeto po jeziku strani. */
+  cookieSettingsLabel?: string;
 }
 
-const { siteName, tagline, columns = [], legal = [], companyInfo, copyrightName = siteName } = Astro.props;
+const { siteName, tagline, columns = [], legal = [], companyInfo, copyrightName = siteName, cookieSettingsLabel } = Astro.props;
 const year = new Date().getFullYear();
+const lang = (Astro.currentLocale ?? config.i18n?.defaultLocale ?? 'sl') as ConsentLang;
+const cookieSettings =
+  config.analytics.enabled && config.analytics.provider === 'ga4'
+    ? (cookieSettingsLabel ?? cookieSettingsLabels[lang] ?? cookieSettingsLabels.sl)
+    : undefined;
 ---
 
 <footer class="bg-surface-inverse py-16 text-on-surface-inverse">
@@ -47,7 +57,7 @@ const year = new Date().getFullYear();
   >
     <p>© {year} {copyrightName}{companyInfo && <span> · {companyInfo}</span>}</p>
     {
-      legal.length > 0 && (
+      (legal.length > 0 || cookieSettings) && (
         <ul class="flex flex-wrap gap-x-6 gap-y-2">
           {legal.map((link) => (
             <li>
@@ -56,6 +66,13 @@ const year = new Date().getFullYear();
               </a>
             </li>
           ))}
+          {cookieSettings && (
+            <li>
+              <button type="button" data-cc="show-preferencesModal" class="cursor-pointer hover:text-on-surface-inverse">
+                {cookieSettings}
+              </button>
+            </li>
+          )}
         </ul>
       )
     }

@@ -1,0 +1,19 @@
+---
+/**
+ * Plausible: odprta koda, brez piškotkov → brez bannerja. Skripta je `defer`, dogodki prek `plausible()`.
+ * Lastnosti dogodkov (`props`) so v Plausible vidne kot "custom properties".
+ */
+interface Props {
+  scriptUrl: string;
+  domain: string;
+}
+
+const { scriptUrl, domain } = Astro.props;
+---
+
+<script is:inline defer src={scriptUrl} data-domain={domain}></script>
+<script>
+  import { initTracking } from '../track.ts';
+
+  initTracking((name, props) => window.plausible?.(name, { props }));
+</script>

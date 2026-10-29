@@ -28,6 +28,35 @@ export interface FactoryOgOptions {
   collections?: string[];
 }
 
+/**
+ * Analitika. Privzeto `none` (0 B JavaScripta). Umami in Plausible sta brez piškotkov, zato brez bannerja;
+ * GA4 samo kot izjema (zapis v EXCEPTIONS.md) – z bannerjem in Google Consent Mode v2.
+ * Skripte se naložijo samo v produkcijskem buildu, nikoli v `astro dev`.
+ */
+export type FactoryAnalyticsOptions =
+  | { provider: 'none' }
+  | {
+      provider: 'umami';
+      /** URL sledilne skripte, npr. `https://analytics.e-visuals.si/script.js`. */
+      scriptUrl: string;
+      /** UUID strani v Umami. */
+      websiteId: string;
+    }
+  | {
+      provider: 'plausible';
+      /** URL sledilne skripte, npr. `https://plausible.io/js/script.js`. */
+      scriptUrl: string;
+      /** Domena strani, kot je vpisana v Plausible. */
+      domain: string;
+    }
+  | {
+      provider: 'ga4';
+      /** GA4 Measurement ID, npr. `G-XXXXXXXXXX`. */
+      measurementId: string;
+      /** Povezava na politiko zasebnosti v bannerju; niz ali po jezikih (`{ sl: '/zasebnost/', en: '/en/privacy/' }`). */
+      privacyHref?: string | Record<string, string>;
+    };
+
 export interface FactoryOptions {
   /** Ime strani (na samodejnih OG slikah). */
   siteName?: string;
@@ -45,6 +74,8 @@ export interface FactoryOptions {
   sitemap?: SitemapOptions | false;
   /** robots.txt: poti, ki jih iskalniki ne indeksirajo, ali `noindex: true` za preview okolja. */
   robots?: { disallow?: string[]; noindex?: boolean };
+  /** Analitika (Umami, Plausible ali GA4 s privolitvijo). Privzeto `{ provider: 'none' }`. */
+  analytics?: FactoryAnalyticsOptions;
 }
 
 /** Konfiguracija, ki jo komponente preberejo iz `virtual:factory/config`. */
@@ -55,11 +86,15 @@ export interface FactoryRuntimeConfig {
   og: { siteName: string; tagline?: string; host: string; collections: string[]; theme: OgTheme } | false;
   robots: { disallow: string[]; noindex: boolean };
   i18n: { defaultLocale: string; locales: string[] } | null;
+  /** `enabled` je `true` samo v produkcijskem buildu (`astro build`). */
+  analytics: FactoryAnalyticsOptions & { enabled: boolean };
 }
 
 const PACKAGE_ROOT = new URL('../', import.meta.url);
 const CONFIG_ID = 'virtual:factory/config';
 const THEME_ID = 'virtual:factory/theme.css';
+const ANALYTICS_ID = 'virtual:factory/analytics';
+const ANALYTICS_COMPONENTS = { none: 'None', umami: 'Umami', plausible: 'Plausible', ga4: 'Ga4' } as const;
 
 export default function factory(options: FactoryOptions = {}): AstroIntegration {
   const fontRoles = Object.keys(options.fonts ?? {});
@@ -69,7 +104,7 @@ export default function factory(options: FactoryOptions = {}): AstroIntegration 
   return {
     name: '@e-visuals-studio/core',
     hooks: {
-      'astro:config:setup': async ({ config, updateConfig, injectRoute, addWatchFile, createCodegenDir, logger }) => {
+      'astro:config:setup': async ({ command, config, updateConfig, injectRoute, addWatchFile, createCodegenDir, logger }) => {
         if (!config.site) {
           throw new Error('[factory] `site` v astro.config je obvezen (canonical, OG, sitemap, RSS).');
         }
@@ -126,7 +161,14 @@ export default function factory(options: FactoryOptions = {}): AstroIntegration 
                 },
           robots: { disallow: options.robots?.disallow ?? [], noindex: options.robots?.noindex ?? false },
           i18n,
+          analytics: { ...validateAnalytics(options.analytics), enabled: command === 'build' },
         };
+        if (runtimeConfig.analytics.provider !== 'none') {
+          logger.info(
+            `Analitika: ${runtimeConfig.analytics.provider}` +
+              (runtimeConfig.analytics.enabled ? '' : ' (v dev načinu se ne naloži)'),
+          );
+        }
 
         // 3) Sitemap (z hreflang, če je vklopljen i18n), robots.txt, RSS
         const integrations: AstroIntegration[] = [];
@@ -169,11 +211,43 @@ export default function factory(options: FactoryOptions = {}): AstroIntegration 
       'astro:config:done': ({ injectTypes }) => {
         injectTypes({
           filename: 'types.d.ts',
-          content: `declare module '${CONFIG_ID}' {\n  const config: import('@e-visuals-studio/core/integration').FactoryRuntimeConfig;\n  export default config;\n}\n`,
+          content:
+            `declare module '${CONFIG_ID}' {\n  const config: import('@e-visuals-studio/core/integration').FactoryRuntimeConfig;\n  export default config;\n}\n` +
+            `declare module '${ANALYTICS_ID}' {\n  const Provider: (props: Record<string, unknown>) => unknown;\n  export default Provider;\n}\n`,
         });
       },
     },
   };
+}
+
+/** Preveri nastavitve analitike, da napačen ID ne pride tiho v produkcijo. */
+function validateAnalytics(analytics: FactoryAnalyticsOptions = { provider: 'none' }): FactoryAnalyticsOptions {
+  const fail = (message: string): never => {
+    throw new Error(`[factory] analytics (${analytics.provider}): ${message}`);
+  };
+  const checkScriptUrl = (url: string) => {
+    // Absoluten https URL ali pot na isti domeni (npr. proxy prek Workerja).
+    if (!/^(https:\/\/[^\s/]+\/|\/(?!\/))\S*$/.test(url ?? '')) fail(`scriptUrl mora biti https URL ali pot, ki se začne z /, ne "${url}".`);
+  };
+  switch (analytics.provider) {
+    case 'none':
+      return analytics;
+    case 'umami':
+      checkScriptUrl(analytics.scriptUrl);
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(analytics.websiteId ?? '')) {
+        fail(`websiteId mora biti UUID, ne "${analytics.websiteId}".`);
+      }
+      return analytics;
+    case 'plausible':
+      checkScriptUrl(analytics.scriptUrl);
+      if (!/^[a-z0-9.-]+\.[a-z]{2,}$/i.test(analytics.domain ?? '')) fail(`domain mora biti domena brez protokola, ne "${analytics.domain}".`);
+      return analytics;
+    case 'ga4':
+      if (!/^G-[A-Z0-9]+$/.test(analytics.measurementId ?? '')) fail(`measurementId mora biti oblike G-XXXXXXXXXX, ne "${analytics.measurementId}".`);
+      return analytics;
+    default:
+      return fail(`neznan ponudnik; dovoljeni so umami, plausible, ga4 in none.`);
+  }
 }
 
 /** Vstopni CSS: Tailwind + tema iz tokenov + osnovni stili core; viri za skeniranje razredov so našteti izrecno. */
@@ -198,6 +272,13 @@ function virtualModules(getConfig: () => FactoryRuntimeConfig, getThemeFile: () 
       if (id === CONFIG_ID) return resolvedConfigId;
       // Tema je prava datoteka, da jo Tailwind obdela kot vsak drug CSS.
       if (id === THEME_ID) return getThemeFile();
+      // Samo izbrani ponudnik pride v graf uvozov: brez tega bi CSS bannerja (GA4) in skripte
+      // vseh ponudnikov končali v buildu tudi pri `none`.
+      if (id === ANALYTICS_ID) {
+        const { provider, enabled } = getConfig().analytics;
+        const component = ANALYTICS_COMPONENTS[enabled ? provider : 'none'];
+        return fileURLToPath(new URL(`src/analytics/providers/${component}.astro`, PACKAGE_ROOT));
+      }
       return undefined;
     },
     load(id: string) {
