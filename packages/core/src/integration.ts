@@ -4,7 +4,8 @@ import { fileURLToPath } from 'node:url';
 import sitemap, { type SitemapOptions } from '@astrojs/sitemap';
 import tailwindcss from '@tailwindcss/vite';
 import type { AstroIntegration } from 'astro';
-import { buildThemeCss, checkContrast } from './tokens/build-tokens.ts';
+import type { OgTheme } from './og/render.ts';
+import { buildThemeCss, checkContrast, resolveColorToken } from './tokens/build-tokens.ts';
 
 type AstroFontFamily = NonNullable<import('astro').AstroUserConfig['fonts']>[number];
 
@@ -20,13 +21,24 @@ export interface FactoryRssOptions {
   basePath?: string;
 }
 
+export interface FactoryOgOptions {
+  /** Slogan na privzeti OG sliki (`/og/default.png`). */
+  tagline?: string;
+  /** Kolekcije, za katere se generira OG slika postov brez lastne slike. Privzeto kolekcija iz `rss`. */
+  collections?: string[];
+}
+
 export interface FactoryOptions {
+  /** Ime strani (na samodejnih OG slikah). */
+  siteName?: string;
   /** Pot do tokens.json, relativno na koren projekta. Privzeto `tokens.json`, sicer privzeta tema iz core. */
   tokens?: string;
   /** Fonti po vlogah (`body`, `heading`). Self-hostani prek Astro Fonts API. */
   fonts?: Partial<Record<'body' | 'heading', FactoryFont>>;
   /** Vlogi fontov, za kateri se doda `<link rel="preload">`. Privzeto samo `body`. */
   preloadFonts?: Array<'body' | 'heading'>;
+  /** Samodejne OG slike na `/og/…` (1200×630 PNG v barvah tokenov), ali `false` za izklop. */
+  og?: FactoryOgOptions | false;
   /** RSS na `/rss.xml`. */
   rss?: FactoryRssOptions | false;
   /** Dodatne nastavitve za @astrojs/sitemap, ali `false` za izklop. */
@@ -40,6 +52,7 @@ export interface FactoryRuntimeConfig {
   fontRoles: string[];
   preloadFonts: string[];
   rss: FactoryRssOptions | false;
+  og: { siteName: string; tagline?: string; host: string; collections: string[]; theme: OgTheme } | false;
   robots: { disallow: string[]; noindex: boolean };
   i18n: { defaultLocale: string; locales: string[] } | null;
 }
@@ -90,6 +103,27 @@ export default function factory(options: FactoryOptions = {}): AstroIntegration 
           fontRoles,
           preloadFonts: options.preloadFonts ?? fontRoles.filter((r) => r === 'body'),
           rss: options.rss ?? false,
+          og:
+            options.og === false
+              ? false
+              : {
+                  siteName: options.siteName ?? new URL(config.site).hostname,
+                  tagline: options.og?.tagline,
+                  host: new URL(config.site).hostname,
+                  collections: options.og?.collections ?? (options.rss ? [options.rss.collection] : []),
+                  theme: {
+                    background: resolveColorToken(tokens, 'primary') ?? 'black',
+                    foreground: resolveColorToken(tokens, 'on-primary') ?? 'white',
+                    accent: resolveColorToken(tokens, 'accent') ?? resolveColorToken(tokens, 'on-primary') ?? 'white',
+                    fonts: (['latin', 'latin-ext'] as const).flatMap((subset) =>
+                      ([400, 700] as const).map((weight) => ({
+                        name: subset === 'latin' ? 'Inter' : 'Inter Ext',
+                        weight,
+                        path: fileURLToPath(import.meta.resolve(`@fontsource/inter/files/inter-${subset}-${weight}-normal.woff`)),
+                      })),
+                    ),
+                  },
+                },
           robots: { disallow: options.robots?.disallow ?? [], noindex: options.robots?.noindex ?? false },
           i18n,
         };
@@ -111,6 +145,9 @@ export default function factory(options: FactoryOptions = {}): AstroIntegration 
           );
         }
         injectRoute({ pattern: '/robots.txt', entrypoint: new URL('src/routes/robots.txt.ts', PACKAGE_ROOT), prerender: true });
+        if (options.og !== false) {
+          injectRoute({ pattern: '/og/[...slug].png', entrypoint: new URL('src/routes/og.ts', PACKAGE_ROOT), prerender: true });
+        }
         if (options.rss) {
           injectRoute({ pattern: '/rss.xml', entrypoint: new URL('src/routes/rss.xml.ts', PACKAGE_ROOT), prerender: true });
         }

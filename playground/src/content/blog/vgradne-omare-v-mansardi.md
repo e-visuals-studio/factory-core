@@ -8,6 +8,7 @@ image:
   avtor: e-visuals (scripts/gen-placeholders.ts)
   vir: generirano
   licenca: lastna (generiran placeholder)
+  ai: false
 tags: [omare]
 ---
 

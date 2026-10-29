@@ -185,6 +185,16 @@ export function contrastRatio(a: string, b: string): number | undefined {
  * Preveri pare `on-<ozadje>` proti `<ozadje>`. Za `on-surface-muted` se uporabi najdaljše obstoječe ozadje
  * (`surface-muted`, sicer `surface`). Barve, ki niso hex, se preskočijo.
  */
+/** Končna vrednost barvnega tokena (reference `{color.x}` razrešene), npr. za OG slike. */
+export function resolveColorToken(tokens: TokenNode, name: string): string | undefined {
+  const colors = new Map(
+    flattenTokens(tokens)
+      .filter((t) => t.path[0] === 'color')
+      .map((t) => [t.path.slice(1).join('-'), String(t.value)]),
+  );
+  return resolveColor(name, colors);
+}
+
 export function checkContrast(tokens: TokenNode, min = MIN_CONTRAST): ContrastIssue[] {
   const colors = new Map(
     flattenTokens(tokens)

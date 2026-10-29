@@ -13,6 +13,8 @@ export default defineConfig({
   },
   integrations: [
     factory({
+      siteName: 'Mizarstvo Primer',
+      og: { tagline: 'Pohištvo po meri iz masivnega lesa' },
       fonts: {
         body: {
           name: 'Inter',

@@ -13,7 +13,9 @@ Struktura in ukazi: `README.md`. Node ≥ 22.12 (`nvm use`), pnpm prek corepacka
 **Slike in avtorske pravice**
 - Nikoli ne prenašaj slik s spleta in ne vstavljaj URL-jev tujih slik (tudi ne Unsplash/Pexels brez zapisa v registru).
 - Med razvojem samo generirani placeholderji (`pnpm --filter playground placeholders`). Manjkajoča prava slika = placeholder + TODO.
-- Vsaka slika ima zapis v `assets.licenses.yaml`; slike v content kolekcijah imajo obvezna polja `src`, `alt`, `avtor`, `vir`, `licenca` (`licensedImageSchema`).
+- Vsaka slika ima zapis v `assets.licenses.yaml` (z `ai: true/false`); slike v content kolekcijah imajo obvezna polja `src`, `alt`, `avtor`, `vir`, `licenca` ter `ai` (privzeto `false`) – `licensedImageSchema`.
+- AI slike (`ai: true`) samo kot ilustracija: nikoli ljudje, ekipa, objekt ali izdelek stranke, ne v referencah. Na strani so označene kot AI ilustracija.
+- Post brez slike je v redu: OG slika se generira samodejno (`ogImage()`), ne išči slike drugje.
 - Slike samo prek `<Image>` iz `astro:assets`; LCP slika s `priority`, ostale lazy.
 
 **Komponente in strani**

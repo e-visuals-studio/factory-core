@@ -18,6 +18,11 @@ export const licensedImageSchema = ({ image }: SchemaContext) =>
     vir: required('vir'),
     /** npr. "Unsplash License", "CC BY 4.0", "pogodba s fotografom", "lastna" */
     licenca: required('licenca'),
+    /**
+     * AI generirana slika (pravilo o AI slikah iz plana): samo ilustracija, nikoli prikaz resničnih oseb,
+     * izdelkov ali objektov stranke. Na strani se označi kot AI ilustracija.
+     */
+    ai: z.boolean().default(false),
   });
 
 export type LicensedImage = z.infer<ReturnType<typeof licensedImageSchema>>;
@@ -33,7 +38,8 @@ export const blogSchema = (context: SchemaContext) =>
     pubDate: z.coerce.date(),
     updatedDate: z.coerce.date().optional(),
     author: z.string().default('Uredništvo'),
-    image: licensedImageSchema(context),
+    /** Neobvezna; brez nje se uporabi samodejna OG slika (`ogImage()`). Če obstaja, so vsa polja obvezna. */
+    image: licensedImageSchema(context).optional(),
     tags: z.array(z.string()).default([]),
     lang: z.string().optional(),
     draft: z.boolean().default(false),

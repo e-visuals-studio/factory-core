@@ -4,7 +4,7 @@ import { render } from 'astro:content';
 import BaseLayout from '@e-visuals-studio/core/layouts/BaseLayout.astro';
 import Header from '@e-visuals-studio/core/blocks/Header.astro';
 import Footer from '@e-visuals-studio/core/blocks/Footer.astro';
-import { article, breadcrumbList } from '@e-visuals-studio/core';
+import { article, breadcrumbList, ogImage } from '@e-visuals-studio/core';
 import { cta, footer, nav, site } from '../../site';
 import { getPosts } from '../../lib/posts';
 
@@ -15,6 +15,9 @@ export async function getStaticPaths() {
 const { post } = Astro.props;
 const { Content } = await render(post);
 const url = new URL(Astro.url.pathname, Astro.site);
+const { image } = post.data;
+// Brez slike: samodejno generirana OG slika (naslov posta v barvah tokenov).
+const socialImage = image?.src ?? ogImage('blog', post.id);
 const dateFormat = new Intl.DateTimeFormat('sl-SI', { day: 'numeric', month: 'long', year: 'numeric' });
 ---
 
@@ -23,8 +26,8 @@ const dateFormat = new Intl.DateTimeFormat('sl-SI', { day: 'numeric', month: 'lo
   description={post.data.description}
   siteName={site.name}
   type="article"
-  image={post.data.image.src}
-  imageAlt={post.data.image.alt}
+  image={socialImage}
+  imageAlt={image?.alt ?? post.data.title}
   article={{
     publishedTime: post.data.pubDate,
     modifiedTime: post.data.updatedDate,
@@ -36,7 +39,7 @@ const dateFormat = new Intl.DateTimeFormat('sl-SI', { day: 'numeric', month: 'lo
       headline: post.data.title,
       description: post.data.description,
       url,
-      image: new URL(post.data.image.src.src, Astro.site),
+      image: new URL(socialImage.src, Astro.site),
       datePublished: post.data.pubDate,
       dateModified: post.data.updatedDate,
       author: post.data.author,
@@ -67,19 +70,23 @@ const dateFormat = new Intl.DateTimeFormat('sl-SI', { day: 'numeric', month: 'lo
         · {post.data.author}
       </p>
     </header>
-    <figure class="wrap mt-10">
-      <Image
-        src={post.data.image.src}
-        alt={post.data.image.alt}
-        widths={[640, 960, 1280]}
-        sizes="(min-width: 76rem) 72rem, 100vw"
-        priority
-        class="aspect-video w-full rounded-lg object-cover"
-      />
-      <figcaption class="mt-2 text-sm text-on-surface-muted">
-        Foto: {post.data.image.avtor} · {post.data.image.licenca}
-      </figcaption>
-    </figure>
+    {
+      image && (
+        <figure class="wrap mt-10">
+          <Image
+            src={image.src}
+            alt={image.alt}
+            widths={[640, 960, 1280]}
+            sizes="(min-width: 76rem) 72rem, 100vw"
+            priority
+            class="aspect-video w-full rounded-lg object-cover"
+          />
+          <figcaption class="mt-2 text-sm text-on-surface-muted">
+            {image.ai ? 'Ilustracija, ustvarjena z umetno inteligenco' : 'Foto'}: {image.avtor} · {image.licenca}
+          </figcaption>
+        </figure>
+      )
+    }
     <div class="wrap-prose prose-factory mt-10">
       <Content />
     </div>

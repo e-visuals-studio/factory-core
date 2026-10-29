@@ -13,6 +13,6 @@ export async function getPostItems(limit?: number): Promise<BlogListItem[]> {
     description: post.data.description,
     href: `/blog/${post.id}/`,
     date: post.data.pubDate,
-    image: { src: post.data.image.src, alt: post.data.image.alt },
+    image: post.data.image && { src: post.data.image.src, alt: post.data.image.alt },
   }));
 }

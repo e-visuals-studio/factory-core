@@ -22,8 +22,8 @@ export interface SEOProps {
   titleTemplate?: string;
   /** Privzeto trenutna pot na `site` iz astro.config. */
   canonical?: string | URL;
-  /** Lokalna slika (pretvori se v 1200×630 JPG) ali absoluten URL. */
-  image?: ImageMetadata | string;
+  /** Lokalna slika (pretvori se v 1200×630 JPG), pot/URL ali `{ src, width, height }` (npr. `ogImage()`). */
+  image?: ImageMetadata | string | { src: string; width: number; height: number };
   imageAlt?: string;
   type?: 'website' | 'article';
   /** `sl_SI`, `en_US` … Privzeto iz `lang`. */
@@ -66,6 +66,9 @@ let ogImage: string | undefined;
 let ogImageSize: { width: number; height: number } | undefined;
 if (typeof image === 'string') {
   ogImage = new URL(image, site).href;
+} else if (image && !('format' in image)) {
+  ogImage = new URL(image.src, site).href;
+  ogImageSize = { width: image.width, height: image.height };
 } else if (image) {
   const og = await getImage({ src: image, width: 1200, height: 630, format: 'jpg', fit: 'cover' });
   ogImage = new URL(og.src, site).href;

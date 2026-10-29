@@ -7,6 +7,7 @@ import { Font } from 'astro:assets';
 import config from 'virtual:factory/config';
 import 'virtual:factory/theme.css';
 import SEO, { type SEOProps } from '../seo/SEO.astro';
+import { defaultOgImage } from '../og/paths.ts';
 
 export interface Props extends SEOProps {
   /** Besedilo povezave za preskok na vsebino. */
@@ -14,6 +15,8 @@ export interface Props extends SEOProps {
 }
 
 const { skipLinkLabel, ...seo } = Astro.props;
+// Brez lastne slike: samodejna OG slika strani (ime + slogan v barvah tokenov).
+const image = seo.image ?? (config.og ? defaultOgImage : undefined);
 const lang = seo.lang ?? config.i18n?.defaultLocale ?? 'sl';
 const skipLabel = skipLinkLabel ?? (lang === 'sl' ? 'Preskoči na vsebino' : 'Skip to content');
 ---
@@ -33,7 +36,7 @@ const skipLabel = skipLinkLabel ?? (lang === 'sl' ? 'Preskoči na vsebino' : 'Sk
         />
       ))
     }
-    <SEO {...seo} lang={lang} />
+    <SEO {...seo} image={image} lang={lang} />
     {config.rss && <link rel="alternate" type="application/rss+xml" title={config.rss.title} href="/rss.xml" />}
     <slot name="head" />
   </head>
