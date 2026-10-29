@@ -23,6 +23,13 @@ Struktura in ukazi: `README.md`. Node ≥ 22.12 (`nvm use`), pnpm prek corepacka
 - Nove komponente najprej kot blok v `packages/core/src/blocks/`; stilirane samo s tokeni, brez JavaScripta (interaktivnost samo kot Astro island z razlogom).
 - Nobenih izmišljenih podatkov o stranki (naslovi, telefoni, številke, reference) – manjkajoče označi s TODO.
 
+**Analitika in piškotki**
+- Analitika samo prek `factory({ analytics })`. Nikoli ročno vstavljenih sledilnih skript (GA, GTM, Meta pixel, Hotjar …) v strani ali bloke.
+- Privzeto Umami ali Plausible (brez piškotkov, brez bannerja). GA4 samo, če ga stranka izrecno želi, z zapisom v `EXCEPTIONS.md`; deluje samo z bannerjem in Consent Mode v2 iz core.
+- Dogodki samo prek `data-track` / `data-track-*` ali `window.factoryTrack()`; povpraševanje je vedno `generate_lead` z `method`.
+- Nobenih pravih ID-jev (Umami, Plausible, GA4) v repozitoriju – samo okoljske spremenljivke; v primerih lažne vrednosti.
+- Politika zasebnosti mora opisati izbrano analitiko (tudi Umami/Plausible).
+
 **Jezik**
 - Besedila na straneh, komentarji v kodi, commit sporočila in PR opisi so v slovenščini.
 
@@ -36,3 +43,4 @@ pnpm build && pnpm check:tokens
 ```
 
 Oboje mora uspeti. Pri spremembah blokov, layouta ali fontov poženi še `pnpm check` in `pnpm lighthouse` (≥ 95 v vseh kategorijah, mobilno).
+Pri spremembah analitike še `pnpm lighthouse:umami`.

@@ -11,7 +11,8 @@
     "dev": "pnpm --filter playground dev",
     "check": "pnpm -r run check",
     "check:tokens": "node packages/core/scripts/check-tokens.ts packages/core/src playground/src",
-    "lighthouse": "lhci autorun"
+    "lighthouse": "lhci autorun",
+    "lighthouse:umami": "ANALYTICS_PROVIDER=umami UMAMI_SCRIPT_URL=/lhci-umami-stub.js UMAMI_WEBSITE_ID=00000000-0000-0000-0000-000000000000 SITE_URL=http://localhost pnpm build && cp playground/lhci/umami-stub.js playground/dist/lhci-umami-stub.js && lhci autorun"
   },
   "devDependencies": {
     "@lhci/cli": "^0.15.1"
