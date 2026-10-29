@@ -2,7 +2,7 @@
   "name": "@e-visuals-studio/core",
   "version": "0.1.0",
   "description": "Jedro Website Factory: SEO, layouti, bloki in tokeni za Astro 6 + Tailwind 4",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "type": "module",
   "repository": {
     "type": "git",
@@ -25,6 +25,10 @@
       "types": "./dist/integration.d.ts",
       "default": "./dist/integration.js"
     },
+    "./brief": {
+      "types": "./dist/brief/index.d.ts",
+      "default": "./dist/brief/index.js"
+    },
     "./tokens": {
       "types": "./dist/tokens/build-tokens.d.ts",
       "default": "./dist/tokens/build-tokens.js"
@@ -36,7 +40,10 @@
     "./tokens.default.json": "./tokens.default.json"
   },
   "bin": {
-    "factory-tokens": "./dist/tokens/cli.js"
+    "factory-tokens": "./dist/tokens/cli.js",
+    "factory-check-tokens": "./dist/cli/check-tokens.js",
+    "factory-check-todo": "./dist/cli/check-todo.js",
+    "factory-placeholders": "./dist/cli/placeholders.js"
   },
   "files": [
     "dist",
@@ -45,8 +52,9 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
+    "prepare": "tsc -p tsconfig.build.json",
     "check": "tsc -p tsconfig.json --noEmit",
-    "check:tokens": "node scripts/check-tokens.ts"
+    "test": "node --test test/*.test.ts"
   },
   "peerDependencies": {
     "astro": "^6.0.0"
@@ -59,7 +67,8 @@
     "satori": "^0.63.2",
     "sharp": "^0.34.5",
     "tailwindcss": "^4.3.3",
-    "vanilla-cookieconsent": "^3.1.0"
+    "vanilla-cookieconsent": "^3.1.0",
+    "yaml": "^2.9.1"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

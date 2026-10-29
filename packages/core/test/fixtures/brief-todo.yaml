@@ -1,0 +1,26 @@
+# Enak kot brief.yaml v site-template: vse vrednosti so TODO.
+stranka:
+  ime: TODO
+  dejavnost: { sl: TODO }
+  opis: { sl: TODO }
+  uvod: { sl: TODO }
+  oNas: { sl: TODO }
+  schemaTip: TODO
+domena: TODO
+jeziki: [sl]
+kontakt: { email: TODO, telefon: TODO }
+naslov: { ulica: TODO, postnaStevilka: TODO, kraj: TODO, drzava: SI }
+lokacija: { obmocje: TODO, geo: null }
+delovniCas:
+  - { dnevi: TODO, od: TODO, do: TODO }
+storitve:
+  - { ime: { sl: TODO }, opis: { sl: TODO } }
+pogostaVprasanja: []
+reference: []
+socialnaOmrezja: []
+kljucneBesede: { sl: [TODO] }
+analitika: { ponudnik: TODO, scriptUrl: null }
+pravno: { naziv: TODO, maticna: TODO, davcna: TODO, sedez: TODO }
+slike:
+  hero: { datoteka: src/assets/placeholders/hero.jpg, alt: { sl: 'TODO: prava fotografija' } }
+  oNas: { datoteka: src/assets/placeholders/about.jpg, alt: { sl: 'TODO: prava fotografija' } }

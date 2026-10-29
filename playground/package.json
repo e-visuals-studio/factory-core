@@ -7,7 +7,7 @@
     "build": "astro build",
     "preview": "astro preview",
     "check": "astro check",
-    "placeholders": "node scripts/gen-placeholders.ts"
+    "placeholders": "factory-placeholders"
   },
   "dependencies": {
     "@e-visuals-studio/core": "workspace:*",
