@@ -1,0 +1,96 @@
+---
+import { Image } from 'astro:assets';
+import { render } from 'astro:content';
+import BaseLayout from '@e-visuals-studio/core/layouts/BaseLayout.astro';
+import Header from '@e-visuals-studio/core/blocks/Header.astro';
+import Footer from '@e-visuals-studio/core/blocks/Footer.astro';
+import { article, breadcrumbList, ogImage } from '@e-visuals-studio/core';
+import { cta, footer, nav, site } from '../../site';
+import { getPosts } from '../../lib/posts';
+
+export async function getStaticPaths() {
+  return (await getPosts()).map((post) => ({ params: { slug: post.id }, props: { post } }));
+}
+
+const { post } = Astro.props;
+const { Content } = await render(post);
+const url = new URL(Astro.url.pathname, Astro.site);
+const { image } = post.data;
+// Brez slike: samodejno generirana OG slika (naslov posta v barvah tokenov).
+const socialImage = image?.src ?? ogImage('blog', post.id);
+const dateFormat = new Intl.DateTimeFormat('sl-SI', { day: 'numeric', month: 'long', year: 'numeric' });
+---
+
+<BaseLayout
+  title={post.data.title}
+  description={post.data.description}
+  siteName={site.name}
+  type="article"
+  image={socialImage}
+  imageAlt={image?.alt ?? post.data.title}
+  article={{
+    publishedTime: post.data.pubDate,
+    modifiedTime: post.data.updatedDate,
+    author: post.data.author,
+    tags: post.data.tags,
+  }}
+  jsonLd={[
+    article({
+      headline: post.data.title,
+      description: post.data.description,
+      url,
+      image: new URL(socialImage.src, Astro.site),
+      datePublished: post.data.pubDate,
+      dateModified: post.data.updatedDate,
+      author: post.data.author,
+      publisher: { name: site.name },
+      inLanguage: 'sl',
+    }),
+    breadcrumbList([
+      { name: 'Domov', url: new URL('/', Astro.site) },
+      { name: 'Blog', url: new URL('/blog/', Astro.site) },
+      { name: post.data.title, url },
+    ]),
+  ]}
+>
+  <Header slot="header" siteName={site.name} nav={nav} cta={cta} />
+
+  <article class="py-section">
+    <header class="wrap-prose">
+      <nav aria-label="Drobtinice" class="text-sm text-on-surface-muted">
+        <ol class="flex flex-wrap gap-2">
+          <li><a href="/" class="underline underline-offset-4">Domov</a> /</li>
+          <li><a href="/blog/" class="underline underline-offset-4">Blog</a> /</li>
+          <li aria-current="page">{post.data.title}</li>
+        </ol>
+      </nav>
+      <h1 class="mt-6 text-4xl font-bold">{post.data.title}</h1>
+      <p class="mt-4 text-on-surface-muted">
+        <time datetime={post.data.pubDate.toISOString()}>{dateFormat.format(post.data.pubDate)}</time>
+        · {post.data.author}
+      </p>
+    </header>
+    {
+      image && (
+        <figure class="wrap mt-10">
+          <Image
+            src={image.src}
+            alt={image.alt}
+            widths={[640, 960, 1280]}
+            sizes="(min-width: 76rem) 72rem, 100vw"
+            priority
+            class="aspect-video w-full rounded-lg object-cover"
+          />
+          <figcaption class="mt-2 text-sm text-on-surface-muted">
+            {image.ai ? 'Ilustracija, ustvarjena z umetno inteligenco' : 'Foto'}: {image.avtor} · {image.licenca}
+          </figcaption>
+        </figure>
+      )
+    }
+    <div class="wrap-prose prose-factory mt-10">
+      <Content />
+    </div>
+  </article>
+
+  <Footer slot="footer" siteName={site.name} {...footer} />
+</BaseLayout>

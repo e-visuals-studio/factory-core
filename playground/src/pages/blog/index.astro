@@ -1,0 +1,25 @@
+---
+import BaseLayout from '@e-visuals-studio/core/layouts/BaseLayout.astro';
+import Header from '@e-visuals-studio/core/blocks/Header.astro';
+import BlogList from '@e-visuals-studio/core/blocks/BlogList.astro';
+import Footer from '@e-visuals-studio/core/blocks/Footer.astro';
+import { breadcrumbList } from '@e-visuals-studio/core';
+import { cta, footer, nav, site } from '../../site';
+import { getPostItems } from '../../lib/posts';
+
+const posts = await getPostItems();
+---
+
+<BaseLayout
+  title="Blog in novice"
+  description="Nasveti za izbiro lesa, vzdrževanje pohištva in novice iz mizarske delavnice Primer v Kamniku."
+  siteName={site.name}
+  jsonLd={breadcrumbList([
+    { name: 'Domov', url: new URL('/', Astro.site) },
+    { name: 'Blog', url: new URL('/blog/', Astro.site) },
+  ])}
+>
+  <Header slot="header" siteName={site.name} nav={nav} cta={cta} />
+  <BlogList title="Blog in novice" headingLevel={1} posts={posts} />
+  <Footer slot="footer" siteName={site.name} {...footer} />
+</BaseLayout>

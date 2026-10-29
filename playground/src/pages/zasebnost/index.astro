@@ -1,0 +1,19 @@
+---
+import BaseLayout from '@e-visuals-studio/core/layouts/BaseLayout.astro';
+import Header from '@e-visuals-studio/core/blocks/Header.astro';
+import Footer from '@e-visuals-studio/core/blocks/Footer.astro';
+import { cta, footer, nav, site } from '../../site';
+---
+
+<BaseLayout
+  title="Politika zasebnosti"
+  description="Kako Mizarstvo Primer obdeluje osebne podatke, ki jih posredujete prek kontaktnega obrazca in e-pošte."
+  siteName={site.name}
+>
+  <Header slot="header" siteName={site.name} nav={nav} cta={cta} />
+  <div class="wrap-prose prose-factory py-section">
+    <h1 class="text-4xl font-bold">Politika zasebnosti</h1>
+    <p>TODO: besedilo se generira iz brief.yaml (glej WEBSITE_FACTORY_PLAN.md, Pravni del).</p>
+  </div>
+  <Footer slot="footer" siteName={site.name} {...footer} />
+</BaseLayout>

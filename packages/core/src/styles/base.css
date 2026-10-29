@@ -1,0 +1,193 @@
+/*
+ * Osnovni stili jedra. Uporabljajo SAMO spremenljivke iz tokenov (--color-*, --font-*, --spacing …).
+ * Uvozi jih generirani vstopni CSS (glej integration.ts), zato so tu dostopne Tailwind direktive.
+ */
+
+@layer base {
+  html {
+    background-color: var(--color-surface);
+    color: var(--color-on-surface);
+    font-family: var(--font-body);
+    line-height: var(--leading-normal);
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-heading);
+    line-height: var(--leading-tight);
+    letter-spacing: var(--tracking-tight);
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 3px;
+  }
+
+  summary {
+    list-style: none;
+    cursor: pointer;
+  }
+  summary::-webkit-details-marker {
+    display: none;
+  }
+
+  [id] {
+    scroll-margin-top: calc(var(--spacing) * 20);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* Širina vsebine z robom iz tokenov: `wrap`, ozka varianta `wrap-prose`. */
+@utility wrap {
+  width: 100%;
+  max-width: calc(var(--container-content) + 2 * var(--spacing-gutter));
+  margin-inline: auto;
+  padding-inline: var(--spacing-gutter);
+}
+
+@utility wrap-prose {
+  width: 100%;
+  max-width: calc(var(--container-measure) + 2 * var(--spacing-gutter));
+  margin-inline: auto;
+  padding-inline: var(--spacing-gutter);
+}
+
+/* Motion tokeni: `duration-fast`, `duration-base` … iz --duration-*; easing je Tailwind namespace (`ease-standard`). */
+@utility duration-* {
+  transition-duration: --value(--duration-*);
+}
+
+@layer components {
+  .skip-link {
+    position: absolute;
+    left: var(--spacing-gutter);
+    top: calc(var(--spacing) * 2);
+    z-index: 50;
+    padding: calc(var(--spacing) * 2) calc(var(--spacing) * 4);
+    border-radius: var(--radius-sm);
+    background: var(--color-primary);
+    color: var(--color-on-primary);
+    transform: translateY(-200%);
+  }
+  .skip-link:focus {
+    transform: none;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: calc(var(--spacing) * 2);
+    min-height: calc(var(--spacing) * 12);
+    padding: calc(var(--spacing) * 3) calc(var(--spacing) * 6);
+    border: 1px solid transparent;
+    border-radius: var(--radius-full);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--leading-snug);
+    text-decoration: none;
+    transition:
+      background-color var(--duration-fast) var(--ease-standard),
+      color var(--duration-fast) var(--ease-standard),
+      border-color var(--duration-fast) var(--ease-standard);
+  }
+  .btn-primary {
+    background: var(--color-primary);
+    color: var(--color-on-primary);
+  }
+  .btn-primary:hover {
+    background: var(--color-on-surface);
+  }
+  .btn-secondary {
+    border-color: currentColor;
+    color: var(--color-primary);
+  }
+  .btn-secondary:hover {
+    background: var(--color-primary);
+    color: var(--color-on-primary);
+  }
+  /* Za temna ozadja (CTA na primary, footer). */
+  .btn-inverse {
+    background: var(--color-on-primary);
+    color: var(--color-primary);
+  }
+  .btn-inverse:hover {
+    background: var(--color-surface-alt);
+  }
+
+  .eyebrow {
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
+    color: var(--color-accent);
+  }
+
+  /* Besedilo iz CMS (blog post, O nas). */
+  .prose-factory {
+    font-size: var(--text-lg);
+    line-height: var(--leading-normal);
+  }
+  .prose-factory > * + * {
+    margin-top: 1.25em;
+  }
+  .prose-factory :where(h2) {
+    margin-top: 2em;
+    font-size: var(--text-2xl);
+    font-weight: var(--font-weight-bold);
+  }
+  .prose-factory :where(h3) {
+    margin-top: 1.6em;
+    font-size: var(--text-xl);
+    font-weight: var(--font-weight-semibold);
+  }
+  .prose-factory :where(a) {
+    color: var(--color-primary);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+  .prose-factory :where(ul, ol) {
+    padding-left: 1.25em;
+  }
+  .prose-factory :where(ul) {
+    list-style: disc;
+  }
+  .prose-factory :where(ol) {
+    list-style: decimal;
+  }
+  .prose-factory :where(li + li) {
+    margin-top: 0.4em;
+  }
+  .prose-factory :where(blockquote) {
+    border-left: 3px solid var(--color-accent);
+    padding-left: 1em;
+    font-style: italic;
+    color: var(--color-on-surface-muted);
+  }
+  .prose-factory :where(img) {
+    border-radius: var(--radius-md);
+  }
+  .prose-factory :where(code) {
+    font-size: 0.9em;
+    background: var(--color-surface-alt);
+    border-radius: var(--radius-sm);
+    padding: 0.1em 0.35em;
+  }
+}

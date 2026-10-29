@@ -1,0 +1,67 @@
+{
+  "name": "@e-visuals-studio/core",
+  "version": "0.1.0",
+  "description": "Jedro Website Factory: SEO, layouti, bloki in tokeni za Astro 6 + Tailwind 4",
+  "license": "UNLICENSED",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/e-visuals-studio/factory-core.git",
+    "directory": "packages/core"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "keywords": [
+    "astro-component",
+    "astro-integration"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./integration": {
+      "types": "./dist/integration.d.ts",
+      "default": "./dist/integration.js"
+    },
+    "./tokens": {
+      "types": "./dist/tokens/build-tokens.d.ts",
+      "default": "./dist/tokens/build-tokens.js"
+    },
+    "./layouts/*": "./src/layouts/*",
+    "./blocks/*": "./src/blocks/*",
+    "./seo/*": "./src/seo/*",
+    "./tokens.default.json": "./tokens.default.json"
+  },
+  "bin": {
+    "factory-tokens": "./dist/tokens/cli.js"
+  },
+  "files": [
+    "dist",
+    "src",
+    "tokens.default.json"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "check:tokens": "node scripts/check-tokens.ts"
+  },
+  "peerDependencies": {
+    "astro": "^6.0.0"
+  },
+  "dependencies": {
+    "@astrojs/rss": "^4.0.19",
+    "@astrojs/sitemap": "^3.7.4",
+    "@fontsource/inter": "^5.3.0",
+    "@tailwindcss/vite": "^4.3.3",
+    "satori": "^0.63.2",
+    "sharp": "^0.34.5",
+    "tailwindcss": "^4.3.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "astro": "^6.4.8",
+    "typescript": "^5.9.3"
+  }
+}

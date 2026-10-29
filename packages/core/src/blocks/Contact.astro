@@ -1,0 +1,174 @@
+---
+/**
+ * Contact – kontaktni podatki (tel:, mailto:, naslov) in obrazec.
+ * Obrazec se izriše samo, če je podan `form.action` (Cloudflare Worker pride v fazi 4).
+ * Že zdaj vsebuje honeypot polje in obvezno privolitev.
+ */
+import type { PostalAddress } from '../seo/jsonld.ts';
+
+interface Props {
+  id?: string;
+  eyebrow?: string;
+  title: string;
+  intro?: string;
+  email?: string;
+  phone?: string;
+  address?: PostalAddress;
+  openingHours?: string[];
+  form?: {
+    action: string;
+    privacyHref: string;
+    submitLabel?: string;
+    /** Opcijska izbira storitve. */
+    services?: string[];
+  };
+  labels?: Partial<typeof DEFAULT_LABELS>;
+}
+
+const DEFAULT_LABELS = {
+  email: 'E-pošta',
+  phone: 'Telefon',
+  address: 'Naslov',
+  hours: 'Delovni čas',
+  name: 'Ime in priimek',
+  message: 'Sporočilo',
+  service: 'Storitev',
+  servicePlaceholder: 'Izberite storitev',
+  consentPrefix: 'Strinjam se z',
+  consentLink: 'obdelavo osebnih podatkov',
+  submit: 'Pošlji sporočilo',
+  required: 'obvezno',
+};
+
+const { id = 'kontakt', eyebrow, title, intro, email, phone, address, openingHours, form, labels: custom } = Astro.props;
+const labels = { ...DEFAULT_LABELS, ...custom };
+const field = 'mt-2 block w-full rounded-sm border border-border bg-surface px-4 py-3 text-on-surface';
+---
+
+<section id={id} class="bg-surface py-section" aria-labelledby={`${id}-title`}>
+  <div class:list={['wrap grid gap-12', form && 'lg:grid-cols-2']}>
+    <div>
+      {eyebrow && <p class="eyebrow mb-3">{eyebrow}</p>}
+      <h2 id={`${id}-title`} class="text-3xl font-bold">{title}</h2>
+      {intro && <p class="mt-4 text-lg text-on-surface-muted">{intro}</p>}
+
+      <dl class="mt-10 grid gap-6 sm:grid-cols-2">
+        {
+          phone && (
+            <div>
+              <dt class="text-sm font-semibold text-on-surface-muted">{labels.phone}</dt>
+              <dd class="mt-1 text-lg">
+                <a href={`tel:${phone.replace(/[^\d+]/g, '')}`} class="text-primary underline underline-offset-4">
+                  {phone}
+                </a>
+              </dd>
+            </div>
+          )
+        }
+        {
+          email && (
+            <div>
+              <dt class="text-sm font-semibold text-on-surface-muted">{labels.email}</dt>
+              <dd class="mt-1 text-lg">
+                <a href={`mailto:${email}`} class="text-primary underline underline-offset-4">
+                  {email}
+                </a>
+              </dd>
+            </div>
+          )
+        }
+        {
+          address && (
+            <div>
+              <dt class="text-sm font-semibold text-on-surface-muted">{labels.address}</dt>
+              <dd class="mt-1 not-italic">
+                <address class="not-italic">
+                  {address.streetAddress}
+                  <br />
+                  {address.postalCode} {address.addressLocality}
+                </address>
+              </dd>
+            </div>
+          )
+        }
+        {
+          openingHours && (
+            <div>
+              <dt class="text-sm font-semibold text-on-surface-muted">{labels.hours}</dt>
+              {openingHours.map((line) => (
+                <dd class="mt-1">{line}</dd>
+              ))}
+            </div>
+          )
+        }
+      </dl>
+    </div>
+
+    {
+      form && (
+        <form method="post" action={form.action} class="grid gap-5 rounded-lg bg-surface-alt p-8">
+          <div>
+            <label for={`${id}-name`} class="font-semibold">
+              {labels.name}
+            </label>
+            <input id={`${id}-name`} name="name" type="text" autocomplete="name" required class={field} />
+          </div>
+          <div class="grid gap-5 sm:grid-cols-2">
+            <div>
+              <label for={`${id}-email`} class="font-semibold">
+                {labels.email}
+              </label>
+              <input id={`${id}-email`} name="email" type="email" autocomplete="email" required class={field} />
+            </div>
+            <div>
+              <label for={`${id}-phone`} class="font-semibold">
+                {labels.phone}
+              </label>
+              <input id={`${id}-phone`} name="phone" type="tel" autocomplete="tel" class={field} />
+            </div>
+          </div>
+          {form.services && (
+            <div>
+              <label for={`${id}-service`} class="font-semibold">
+                {labels.service}
+              </label>
+              <select id={`${id}-service`} name="service" class={field}>
+                <option value="">{labels.servicePlaceholder}</option>
+                {form.services.map((s) => (
+                  <option>{s}</option>
+                ))}
+              </select>
+            </div>
+          )}
+          <div>
+            <label for={`${id}-message`} class="font-semibold">
+              {labels.message}
+            </label>
+            <textarea id={`${id}-message`} name="message" rows="5" required class={field} />
+          </div>
+          {/* Honeypot: skrit ljudem in bralnikom zaslona, boti ga izpolnijo. */}
+          <div class="hidden" aria-hidden="true">
+            <label for={`${id}-website`}>Website</label>
+            <input id={`${id}-website`} name="website" type="text" tabindex="-1" autocomplete="off" />
+          </div>
+          <div class="flex items-start gap-3">
+            <input id={`${id}-consent`} name="consent" type="checkbox" required class="mt-1 size-5 accent-primary" />
+            <label for={`${id}-consent`} class="text-on-surface-muted">
+              {labels.consentPrefix}{' '}
+              <a href={form.privacyHref} class="text-primary underline underline-offset-4">
+                {labels.consentLink}
+              </a>
+              .
+            </label>
+          </div>
+          <div>
+            <button type="submit" class="btn btn-primary">
+              {form.submitLabel ?? labels.submit}
+            </button>
+          </div>
+          <p role="status" aria-live="polite" class="sr-only" />
+        </form>
+      )
+    }
+  </div>
+</section>

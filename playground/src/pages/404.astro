@@ -1,0 +1,22 @@
+---
+import BaseLayout from '@e-visuals-studio/core/layouts/BaseLayout.astro';
+import Header from '@e-visuals-studio/core/blocks/Header.astro';
+import Footer from '@e-visuals-studio/core/blocks/Footer.astro';
+import { cta, footer, nav, site } from '../site';
+---
+
+<BaseLayout
+  title="Stran ne obstaja"
+  description="Iskana stran ne obstaja ali je bila premaknjena. Vrnite se na domačo stran Mizarstva Primer."
+  siteName={site.name}
+  noindex
+>
+  <Header slot="header" siteName={site.name} nav={nav} cta={cta} />
+  <div class="wrap-prose py-section text-center">
+    <p class="eyebrow">404</p>
+    <h1 class="mt-4 text-4xl font-bold">Te strani ni</h1>
+    <p class="mt-4 text-on-surface-muted">Morda je bila premaknjena. Poskusite z domačo stranjo.</p>
+    <a href="/" class="btn btn-primary mt-8">Na domačo stran</a>
+  </div>
+  <Footer slot="footer" siteName={site.name} {...footer} />
+</BaseLayout>

@@ -1,0 +1,19 @@
+{
+  "name": "factory-core-monorepo",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.34.9",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "build": "pnpm -r --filter @e-visuals-studio/core --filter playground run build",
+    "dev": "pnpm --filter playground dev",
+    "check": "pnpm -r run check",
+    "check:tokens": "node packages/core/scripts/check-tokens.ts packages/core/src playground/src",
+    "lighthouse": "lhci autorun"
+  },
+  "devDependencies": {
+    "@lhci/cli": "^0.15.1"
+  }
+}

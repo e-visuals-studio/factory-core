@@ -1,0 +1,28 @@
+# Register licenc (glej WEBSITE_FACTORY_PLAN.md, Avtorske pravice). Vsaka slika v repu mora imeti zapis.
+#
+# Polja: file, source (vir), author (avtor), license (licenca), ai, url, date, proof (dokazilo).
+# ai: true pomeni AI generirano sliko. Pravila iz plana:
+#   - samo ilustracija (ozadja, teksture, abstraktni vizuali, blog ilustracije brez ljudi)
+#   - nikoli "naša ekipa", "naš objekt", "naš izdelek" ali resničen dogodek; ne v galerijah referenc in na straneh o ekipi
+#   - zabeleži še orodje, paket (komercialna raba dovoljena), prompt in datum
+#   - na strani je označena kot AI ilustracija (blog post to naredi samodejno iz polja `ai` v frontmatterju)
+
+- file: src/assets/placeholders/*.jpg
+  source: generated
+  author: scripts/gen-placeholders.ts
+  license: none-required
+  ai: false
+  note: Barvni placeholderji iz tokens.json, brez tujih vsebin.
+
+- file: public/favicon.svg
+  source: generated
+  author: e-visuals
+  license: none-required
+  ai: false
+
+- file: dist/og/**/*.png
+  source: generated at build (@e-visuals-studio/core, satori)
+  author: e-visuals
+  license: none-required
+  ai: false
+  note: Samodejne OG slike iz naslova in tokenov; font Inter (OFL-1.1, @fontsource/inter).

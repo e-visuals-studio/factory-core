@@ -1,0 +1,83 @@
+---
+/**
+ * BlogList – seznam postov ali novic. Prejme normalizirane elemente (glej `BlogListItem`),
+ * da ni vezan na eno content kolekcijo.
+ */
+import { Image } from 'astro:assets';
+import type { BlogListItem, LinkItem } from '../types.ts';
+
+interface Props {
+  id?: string;
+  eyebrow?: string;
+  title: string;
+  /** Na strani /blog/ je naslov <h1>. */
+  headingLevel?: 1 | 2;
+  intro?: string;
+  posts: BlogListItem[];
+  more?: LinkItem;
+  locale?: string;
+  emptyText?: string;
+}
+
+const {
+  id = 'blog',
+  eyebrow,
+  title,
+  headingLevel = 2,
+  intro,
+  posts,
+  more,
+  locale = 'sl-SI',
+  emptyText = 'Prispevkov še ni.',
+} = Astro.props;
+const Heading = `h${headingLevel}` as 'h1' | 'h2';
+const PostHeading = `h${headingLevel + 1}` as 'h2' | 'h3';
+const dateFormat = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', year: 'numeric' });
+---
+
+<section id={id} class="bg-surface py-section" aria-labelledby={`${id}-title`}>
+  <div class="wrap">
+    <div class="flex flex-wrap items-end justify-between gap-6">
+      <div class="max-w-measure">
+        {eyebrow && <p class="eyebrow mb-3">{eyebrow}</p>}
+        <Heading id={`${id}-title`} class:list={['font-bold', headingLevel === 1 ? 'text-4xl' : 'text-3xl']}>
+          {title}
+        </Heading>
+        {intro && <p class="mt-4 text-lg text-on-surface-muted">{intro}</p>}
+      </div>
+      {more && <a href={more.href} class="btn btn-secondary">{more.label}</a>}
+    </div>
+
+    {posts.length === 0 && <p class="mt-12 text-on-surface-muted">{emptyText}</p>}
+    <ul class="mt-12 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+      {
+        posts.map((post) => (
+          <li>
+            <article class="group relative flex h-full flex-col overflow-hidden rounded-md bg-surface shadow-card">
+              {post.image && (
+                <Image
+                  src={post.image.src}
+                  alt={post.image.alt}
+                  widths={[400, 600, 800]}
+                  sizes="(min-width: 64rem) 23rem, (min-width: 48rem) 50vw, 100vw"
+                  class="aspect-video w-full object-cover"
+                />
+              )}
+              <div class="flex flex-1 flex-col p-6">
+                <time datetime={post.date.toISOString()} class="text-sm text-on-surface-muted">
+                  {dateFormat.format(post.date)}
+                </time>
+                <PostHeading class="mt-2 text-xl font-semibold">
+                  <a href={post.href} class="after:absolute after:inset-0 group-hover:text-primary">
+                    {post.title}
+                  </a>
+                </PostHeading>
+                <p class="mt-3 text-on-surface-muted">{post.description}</p>
+              </div>
+            </article>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</section>

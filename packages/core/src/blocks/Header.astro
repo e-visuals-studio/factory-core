@@ -1,0 +1,95 @@
+---
+/**
+ * Header – logo/ime, navigacija in CTA. Mobilni meni je <details>, zato deluje brez JavaScripta.
+ */
+import type { LinkItem, NavItem } from '../types.ts';
+
+interface Props {
+  siteName: string;
+  homeHref?: string;
+  nav: NavItem[];
+  cta?: LinkItem;
+  /** Povezava na drug jezik, npr. `{ label: 'EN', href: '/en/', hreflang: 'en' }`. */
+  languageSwitch?: LinkItem & { hreflang: string; title?: string };
+  menuLabel?: string;
+  navLabel?: string;
+}
+
+const { siteName, homeHref = '/', nav, cta, languageSwitch, menuLabel = 'Meni', navLabel = 'Glavna navigacija' } = Astro.props;
+const path = Astro.url.pathname;
+const isCurrent = (item: NavItem) => (item.match ? path.startsWith(item.match) : path === item.href);
+---
+
+<header class="relative border-b border-border bg-surface">
+  <div class="wrap flex min-h-18 items-center justify-between gap-6">
+    <a href={homeHref} class="font-heading text-xl font-bold tracking-tight text-on-surface no-underline">
+      <slot name="logo">{siteName}</slot>
+    </a>
+
+    <nav aria-label={navLabel} class="hidden md:block">
+      <ul class="flex items-center gap-8">
+        {
+          nav.map((item) => (
+            <li>
+              <a
+                href={item.href}
+                aria-current={isCurrent(item) ? 'page' : undefined}
+                class="text-on-surface-muted hover:text-on-surface aria-[current=page]:text-on-surface aria-[current=page]:font-semibold"
+              >
+                {item.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+
+    <div class="flex items-center gap-4">
+      {
+        languageSwitch && (
+          <a
+            href={languageSwitch.href}
+            hreflang={languageSwitch.hreflang}
+            lang={languageSwitch.hreflang}
+            title={languageSwitch.title}
+            class="text-sm font-semibold tracking-wide text-on-surface-muted hover:text-on-surface"
+          >
+            {languageSwitch.label}
+          </a>
+        )
+      }
+      {cta && <a href={cta.href} class="btn btn-primary hidden md:inline-flex">{cta.label}</a>}
+
+      <details class="group md:hidden">
+        <summary class="btn btn-secondary">
+          {menuLabel}
+        </summary>
+        <nav aria-label={navLabel} class="absolute inset-x-0 top-18 z-40 border-b border-border bg-surface shadow-card">
+          <ul class="wrap flex flex-col py-4">
+            {
+              nav.map((item) => (
+                <li>
+                  <a
+                    href={item.href}
+                    aria-current={isCurrent(item) ? 'page' : undefined}
+                    class="block py-3 text-lg text-on-surface aria-[current=page]:font-semibold"
+                  >
+                    {item.label}
+                  </a>
+                </li>
+              ))
+            }
+            {cta && (
+              <li class="pt-3">
+                <a href={cta.href} class="btn btn-primary w-full">
+                  {cta.label}
+                </a>
+              </li>
+            )}
+          </ul>
+        </nav>
+      </details>
+    </div>
+  </div>
+</header>
+
