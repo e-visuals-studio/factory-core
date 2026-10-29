@@ -1,0 +1,11 @@
+---
+/**
+ * <Analytics> – vstavi ga <BaseLayout> v <head>. Ponudnika izbere `factory({ analytics })`;
+ * integracija preslika `virtual:factory/analytics` na ustrezno komponento v providers/.
+ * Pri `none` in v `astro dev` je to None.astro (0 B JavaScripta in CSS).
+ */
+import config from 'virtual:factory/config';
+import Provider from 'virtual:factory/analytics';
+---
+
+<Provider {...config.analytics} />

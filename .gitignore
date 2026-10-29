@@ -4,3 +4,9 @@ dist/
 .lighthouseci/
 *.log
 .DS_Store
+.env
+.env.*
+!.env.example
+playground/dist-e2e/
+test-results/
+playwright-report/

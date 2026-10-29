@@ -1,6 +1,6 @@
 ---
 /**
- * <BaseLayout> – ogrodje vsake strani: <html lang>, <SEO>, fonti, tema iz tokenov, skip link in <main>.
+ * <BaseLayout> – ogrodje vsake strani: <html lang>, <SEO>, fonti, tema iz tokenov, analitika, skip link in <main>.
  * Sloti: `header`, privzeti (vsebina v <main>), `footer`, `head` (dodatne oznake v <head>).
  */
 import { Font } from 'astro:assets';
@@ -8,6 +8,7 @@ import config from 'virtual:factory/config';
 import 'virtual:factory/theme.css';
 import SEO, { type SEOProps } from '../seo/SEO.astro';
 import { defaultOgImage } from '../og/paths.ts';
+import Analytics from '../analytics/Analytics.astro';
 
 export interface Props extends SEOProps {
   /** Besedilo povezave za preskok na vsebino. */
@@ -38,6 +39,7 @@ const skipLabel = skipLinkLabel ?? (lang === 'sl' ? 'Preskoči na vsebino' : 'Sk
     }
     <SEO {...seo} image={image} lang={lang} />
     {config.rss && <link rel="alternate" type="application/rss+xml" title={config.rss.title} href="/rss.xml" />}
+    <Analytics />
     <slot name="head" />
   </head>
   <body>

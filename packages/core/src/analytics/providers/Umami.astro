@@ -1,0 +1,18 @@
+---
+/**
+ * Umami: odprta koda, brez piškotkov → brez bannerja. Skripta je `defer`, dogodki prek `umami.track()`.
+ */
+interface Props {
+  scriptUrl: string;
+  websiteId: string;
+}
+
+const { scriptUrl, websiteId } = Astro.props;
+---
+
+<script is:inline defer src={scriptUrl} data-website-id={websiteId}></script>
+<script>
+  import { initTracking } from '../track.ts';
+
+  initTracking((name, props) => window.umami?.track(name, props));
+</script>

@@ -14,6 +14,14 @@ import { cta, footer, nav, site } from '../../site';
   <div class="wrap-prose prose-factory py-section">
     <h1 class="text-4xl font-bold">Politika zasebnosti</h1>
     <p>TODO: besedilo se generira iz brief.yaml (glej WEBSITE_FACTORY_PLAN.md, Pravni del).</p>
+    {/*
+      TODO(analitika): politika mora opisati izbrano analitiko iz factory({ analytics }).
+      - Umami/Plausible: ne uporabljata piškotkov (zato brez bannerja), a obvestilo o obdelavi je kljub temu
+        potrebno: kateri podatki (obiskane strani, referrer, naprava/brskalnik, država), namen, pravna podlaga
+        (zakoniti interes), kje so podatki (gostovanje, EU) in obdelovalec (DPA, če ni self-hostano).
+      - GA4: piškotki _ga/_ga_*, privolitev prek bannerja, preklic z »Nastavitve piškotkov« v footerju,
+        prenos podatkov k Googlu (DPA, SCC/EU-US DPF) in rok hrambe iz nastavitev GA4.
+    */}
   </div>
   <Footer slot="footer" siteName={site.name} {...footer} />
 </BaseLayout>

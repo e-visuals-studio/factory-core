@@ -1,0 +1,38 @@
+---
+/**
+ * GA4 – samo kot izjema (zapis v EXCEPTIONS.md). Google Consent Mode v2, osnovni način:
+ * privzeto vse "denied", gtag.js se naloži šele po privolitvi (glej ../consent.ts).
+ * Inline skripta mora teči pred vsem ostalim, zato je v <head> in ni modul.
+ */
+import 'vanilla-cookieconsent/dist/cookieconsent.css';
+import '../consent.css';
+
+interface Props {
+  measurementId: string;
+  privacyHref?: string | Record<string, string>;
+}
+
+const { measurementId, privacyHref } = Astro.props;
+const privacy = typeof privacyHref === 'string' ? { default: privacyHref } : (privacyHref ?? {});
+---
+
+<script is:inline id="factory-ga4" data-id={measurementId} data-privacy={JSON.stringify(privacy)}>
+  window.dataLayer = window.dataLayer || [];
+  window.gtag = function () {
+    window.dataLayer.push(arguments);
+  };
+  gtag('consent', 'default', {
+    ad_storage: 'denied',
+    ad_user_data: 'denied',
+    ad_personalization: 'denied',
+    analytics_storage: 'denied',
+    wait_for_update: 500,
+  });
+  gtag('js', new Date());
+  gtag('config', document.currentScript.dataset.id);
+</script>
+<script>
+  import { initConsent } from '../consent.ts';
+
+  initConsent();
+</script>
