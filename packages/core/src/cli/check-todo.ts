@@ -3,6 +3,7 @@
  * factory-check-todo [dist] [datoteka ...]
  *
  * Pade, če produkcijski build (dist) ali naštete datoteke (npr. brief.yaml, assets.licenses.yaml) vsebujejo TODO.
+ * V YAML datotekah se komentarji ne preverjajo (navodila smejo omenjati TODO).
  * Preview build se preskoči: prepozna se po dist/robots.txt z `Disallow: /` (glej factory({ preview })),
  * zato je izjema vezana na dejanski build, ne na okoljsko spremenljivko.
  */
@@ -36,10 +37,15 @@ async function* walk(dir: string): AsyncGenerator<string> {
   }
 }
 
+/** YAML komentar (`#` na začetku ali za presledkom) – navodila v briefu smejo omenjati TODO. */
+const stripYamlComment = (line: string) => line.replace(/(^|\s)#.*$/, '$1');
+
 let failures = 0;
 async function check(file: string) {
+  const yaml = /\.ya?ml$/.test(file);
   const lines = (await readFile(file, 'utf8')).split('\n');
-  lines.forEach((line, i) => {
+  lines.forEach((raw, i) => {
+    const line = yaml ? stripYamlComment(raw) : raw;
     for (const match of line.matchAll(PATTERN)) {
       const from = Math.max(0, match.index - 40);
       const snippet = line.slice(from, match.index + 60).replace(/\s+/g, ' ').trim();

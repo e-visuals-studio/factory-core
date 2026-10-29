@@ -93,11 +93,11 @@ const { brief, todos } = await loadBrief('brief.yaml'); // + preveri slike v ass
 "@e-visuals-studio/core": "github:e-visuals-studio/factory-core#v0.1.0&path:packages/core"
 ```
 
-pnpm ob namestitvi požene `prepare` (`tsc` → `dist/`). Ker pnpm 10 build skripte odvisnosti privzeto blokira, mora `pnpm-workspace.yaml` stranke dovoliti točno to git referenco (s commit hashem, kot ga izpiše pnpm):
+pnpm ob namestitvi požene `prepare` (`tsc` → `dist/`). Ker pnpm 10 build skripte odvisnosti privzeto blokira, mora `pnpm-workspace.yaml` stranke dovoliti točno to referenco s commitom taga (ime paketa samo ne zadošča; pnpm ob napaki izpiše točen zapis):
 
 ```yaml
 onlyBuiltDependencies:
-  - "@e-visuals-studio/core@https://codeload.github.com/…#<commit>&path:packages/core"
+  - "@e-visuals-studio/core@https://codeload.github.com/e-visuals-studio/factory-core/tar.gz/<commit>#path:packages/core"
 ```
 
 V `site-template` oboje posodobi `pnpm core:update vX.Y.Z`.
