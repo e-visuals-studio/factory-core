@@ -19,6 +19,7 @@ Potrebuješ Node ≥ 22.12 (`nvm use`) in pnpm prek corepacka (`corepack enable`
 | `pnpm check:tokens` | pade, če blok uporablja barve, arbitrary vrednosti ali Tailwind palete mimo tokenov |
 | `pnpm lighthouse` | Lighthouse CI (mobilno, 3 tekme) na `playground/dist`, pade pod 95 v katerikoli kategoriji; potrebuje Chromium (`CHROME_PATH`) |
 | `pnpm lighthouse:umami` | build z Umami (lokalni stub skripte, lažen ID) + Lighthouse CI |
+| `pnpm test:e2e` | Playwright testi analitike in privolitve: zgradi playground za `none`, `umami` in `ga4` (`playground/dist-e2e/`), zažene `astro preview` in preveri banner, Consent Mode, dogodke in preklic; Chromium iz `CHROME_PATH` ali `pnpm exec playwright install chromium` |
 
 ## Uporaba v strani stranke
 
@@ -69,6 +70,8 @@ GA4 uporablja Google Consent Mode v2 (osnovni način): v `<head>` se nastavi pri
 - iz kode (island): `window.factoryTrack?.('ime_dogodka', { … })`
 
 Playground bere ponudnika iz okolja (`ANALYTICS_PROVIDER`, glej `playground/.env.example`); pravih ID-jev v repozitoriju ni.
+
+**E2E testi** (`e2e/`, `pnpm test:e2e`) tečejo brez pravih ID-jev in brez omrežja: vsaka zahteva izven `localhost` se zabeleži in prestreže (Umami skripta in `gtag.js` dobita stub, vse ostalo je prekinjeno), zato test tudi preveri, da pred privolitvijo ni nobene zahteve na Google.
 
 Strani:
 

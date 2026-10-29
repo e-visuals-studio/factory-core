@@ -43,4 +43,4 @@ pnpm build && pnpm check:tokens
 ```
 
 Oboje mora uspeti. Pri spremembah blokov, layouta ali fontov poženi še `pnpm check` in `pnpm lighthouse` (≥ 95 v vseh kategorijah, mobilno).
-Pri spremembah analitike še `pnpm lighthouse:umami`.
+Pri spremembah analitike, bannerja, `<Footer>` ali `<Contact>` še `pnpm test:e2e` in `pnpm lighthouse:umami`.
