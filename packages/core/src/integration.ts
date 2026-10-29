@@ -5,6 +5,7 @@ import sitemap, { type SitemapOptions } from '@astrojs/sitemap';
 import tailwindcss from '@tailwindcss/vite';
 import type { AstroIntegration } from 'astro';
 import type { OgTheme } from './og/render.ts';
+import { detectSiteEnv } from './preview.ts';
 import { buildThemeCss, checkContrast, resolveColorToken } from './tokens/build-tokens.ts';
 
 type AstroFontFamily = NonNullable<import('astro').AstroUserConfig['fonts']>[number];
@@ -76,6 +77,11 @@ export interface FactoryOptions {
   robots?: { disallow?: string[]; noindex?: boolean };
   /** Analitika (Umami, Plausible ali GA4 s privolitvijo). Privzeto `{ provider: 'none' }`. */
   analytics?: FactoryAnalyticsOptions;
+  /**
+   * Preview build: robots.txt `Disallow: /`, `<meta name="robots" content="noindex">` na vseh straneh in brez analitike.
+   * Privzeto iz okolja (`SITE_ENV`, sicer branch iz `CF_PAGES_BRANCH`/`GITHUB_REF_NAME`; vse razen `main` je preview).
+   */
+  preview?: boolean;
 }
 
 /** Konfiguracija, ki jo komponente preberejo iz `virtual:factory/config`. */
@@ -85,6 +91,7 @@ export interface FactoryRuntimeConfig {
   rss: FactoryRssOptions | false;
   og: { siteName: string; tagline?: string; host: string; collections: string[]; theme: OgTheme } | false;
   robots: { disallow: string[]; noindex: boolean };
+  preview: boolean;
   i18n: { defaultLocale: string; locales: string[] } | null;
   /** `enabled` je `true` samo v produkcijskem buildu (`astro build`). */
   analytics: FactoryAnalyticsOptions & { enabled: boolean };
@@ -127,7 +134,16 @@ export default function factory(options: FactoryOptions = {}): AstroIntegration 
         themeFile = fileURLToPath(new URL('theme.css', codegenDir));
         await writeFile(themeFile, entryCss(buildThemeCss(tokens, { fontRoles }), fileURLToPath(config.srcDir)));
 
-        // 2) Konfiguracija za komponente
+        // 2) Preview ali produkcija
+        const siteEnv = detectSiteEnv();
+        const preview = options.preview ?? siteEnv.env === 'preview';
+        logger.info(
+          preview
+            ? `Preview build (${options.preview === undefined ? siteEnv.reason : 'factory({ preview })'}): noindex, brez analitike.`
+            : `Produkcijski build (${options.preview === undefined ? siteEnv.reason : 'factory({ preview })'}).`,
+        );
+
+        // 3) Konfiguracija za komponente
         const i18n = config.i18n
           ? {
               defaultLocale: config.i18n.defaultLocale,
@@ -159,9 +175,13 @@ export default function factory(options: FactoryOptions = {}): AstroIntegration 
                     ),
                   },
                 },
-          robots: { disallow: options.robots?.disallow ?? [], noindex: options.robots?.noindex ?? false },
+          robots: { disallow: options.robots?.disallow ?? [], noindex: preview || (options.robots?.noindex ?? false) },
+          preview,
           i18n,
-          analytics: { ...validateAnalytics(options.analytics), enabled: command === 'build' },
+          // Preview nikoli ne meri obiskov (ne pokvari statistike in ne potrebuje privolitve).
+          analytics: preview
+            ? { provider: 'none', enabled: false }
+            : { ...validateAnalytics(options.analytics), enabled: command === 'build' },
         };
         if (runtimeConfig.analytics.provider !== 'none') {
           logger.info(
@@ -170,7 +190,7 @@ export default function factory(options: FactoryOptions = {}): AstroIntegration 
           );
         }
 
-        // 3) Sitemap (z hreflang, če je vklopljen i18n), robots.txt, RSS
+        // 4) Sitemap (z hreflang, če je vklopljen i18n), robots.txt, RSS
         const integrations: AstroIntegration[] = [];
         if (options.sitemap !== false) {
           integrations.push(

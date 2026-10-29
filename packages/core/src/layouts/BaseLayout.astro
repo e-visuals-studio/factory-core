@@ -37,7 +37,7 @@ const skipLabel = skipLinkLabel ?? (lang === 'sl' ? 'Preskoči na vsebino' : 'Sk
         />
       ))
     }
-    <SEO {...seo} image={image} lang={lang} />
+    <SEO {...seo} image={image} lang={lang} noindex={seo.noindex || config.robots.noindex} />
     {config.rss && <link rel="alternate" type="application/rss+xml" title={config.rss.title} href="/rss.xml" />}
     <Analytics />
     <slot name="head" />

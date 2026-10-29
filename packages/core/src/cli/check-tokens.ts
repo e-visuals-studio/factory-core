@@ -1,6 +1,7 @@
+#!/usr/bin/env node
 /**
+ * factory-check-tokens [mapa ...]   (privzeto ./src)
  * Preveri, da so bloki, layouti in strani stilirani SAMO s tokeni.
- * Uporaba: node scripts/check-tokens.ts [mapa ...]   (privzeto src/ tega paketa)
  *
  * Pade ob: hex/rgb/hsl/oklch barvah, Tailwind arbitrary vrednostih (`p-[13px]`, `bg-[#fff]`),
  * privzetih Tailwind paletah (`bg-blue-500`, `text-white`) in inline `style` z barvami ali px.
@@ -42,7 +43,7 @@ function stripNoise(source: string): string {
 }
 
 const dirs = process.argv.slice(2);
-const roots = (dirs.length ? dirs : [new URL('../src', import.meta.url).pathname]).map((d) => resolve(d));
+const roots = (dirs.length ? dirs : ['src']).map((d) => resolve(d));
 
 let failures = 0;
 for (const root of roots) {

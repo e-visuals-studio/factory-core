@@ -39,8 +39,9 @@ Struktura in ukazi: `README.md`. Node ≥ 22.12 (`nvm use`), pnpm prek corepacka
 ## Pred commitom
 
 ```sh
-pnpm build && pnpm check:tokens
+pnpm build && pnpm check:tokens && pnpm test
 ```
 
-Oboje mora uspeti. Pri spremembah blokov, layouta ali fontov poženi še `pnpm check` in `pnpm lighthouse` (≥ 95 v vseh kategorijah, mobilno).
+Vse mora uspeti. Pri spremembah blokov, layouta ali fontov poženi še `pnpm check` in `pnpm lighthouse` (≥ 95 v vseh kategorijah, mobilno).
+Sprememba v `packages/core` dobi changeset (`pnpm changeset`). Format briefa (`src/brief/`) spreminjaj samo združljivo ali z major verzijo – brief izpolnjujejo vse stranke.
 Pri spremembah analitike, bannerja, `<Footer>` ali `<Contact>` še `pnpm test:e2e` in `pnpm lighthouse:umami`.
