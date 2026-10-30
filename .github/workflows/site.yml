@@ -177,7 +177,8 @@ jobs:
           log="$RUNNER_TEMP/wrangler.log"
           if ! pnpm exec wrangler versions upload --name "$WORKER" --preview-alias "$ALIAS" --message "PR #${PR_NUMBER} ${HEAD_SHA::7}" 2>&1 | tee "$log"; then
             # Worker ustvari šele prvi produkcijski deploy (push na main).
-            if grep -qE '10007|does not exist' "$log"; then
+            # wrangler 4.153: »You cannot upload a new version of a Worker that does not yet exist.«
+            if grep -qiE 'Worker that does not (yet )?exist|Worker does not exist|code: 10007\]' "$log"; then
               echo "### Preview preskočen" >> "$GITHUB_STEP_SUMMARY"
               echo "Worker \`$WORKER\` še ne obstaja; ustvari ga prvi produkcijski deploy (push na \`main\`)." >> "$GITHUB_STEP_SUMMARY"
               echo "::notice::Worker $WORKER še ne obstaja – preview bo na voljo po prvem produkcijskem deployu."
