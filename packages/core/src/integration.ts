@@ -5,7 +5,8 @@ import sitemap, { type SitemapOptions } from '@astrojs/sitemap';
 import tailwindcss from '@tailwindcss/vite';
 import type { AstroIntegration } from 'astro';
 import type { OgTheme } from './og/render.ts';
-import { detectSiteEnv } from './preview.ts';
+import { buildHeaders } from './headers.ts';
+import { detectNoindex, detectSiteEnv } from './preview.ts';
 import { buildThemeCss, checkContrast, resolveColorToken } from './tokens/build-tokens.ts';
 
 type AstroFontFamily = NonNullable<import('astro').AstroUserConfig['fonts']>[number];
@@ -90,7 +91,8 @@ export interface FactoryRuntimeConfig {
   preloadFonts: string[];
   rss: FactoryRssOptions | false;
   og: { siteName: string; tagline?: string; host: string; collections: string[]; theme: OgTheme } | false;
-  robots: { disallow: string[]; noindex: boolean };
+  /** `blockCrawl`: robots.txt `Disallow: /` (preview); `noindex`: meta in `X-Robots-Tag` (preview ali `SITE_NOINDEX`). */
+  robots: { disallow: string[]; blockCrawl: boolean; noindex: boolean };
   preview: boolean;
   i18n: { defaultLocale: string; locales: string[] } | null;
   /** `enabled` je `true` samo v produkcijskem buildu (`astro build`). */
@@ -157,6 +159,9 @@ export default function factory(options: FactoryOptions = {}): AstroIntegration 
             ? `Preview build (${options.preview === undefined ? siteEnv.reason : 'factory({ preview })'}): noindex, brez analitike.`
             : `Produkcijski build (${options.preview === undefined ? siteEnv.reason : 'factory({ preview })'}).`,
         );
+        const blockCrawl = preview || (options.robots?.noindex ?? false);
+        const siteNoindex = detectNoindex();
+        if (siteNoindex && !blockCrawl) logger.info('SITE_NOINDEX: noindex (meta in X-Robots-Tag), robots.txt ostane odprt.');
 
         // 3) Konfiguracija za komponente
         const i18n = config.i18n
@@ -190,7 +195,7 @@ export default function factory(options: FactoryOptions = {}): AstroIntegration 
                     ),
                   },
                 },
-          robots: { disallow: options.robots?.disallow ?? [], noindex: preview || (options.robots?.noindex ?? false) },
+          robots: { disallow: options.robots?.disallow ?? [], blockCrawl, noindex: blockCrawl || siteNoindex },
           preview,
           i18n,
           // Preview nikoli ne meri obiskov (ne pokvari statistike in ne potrebuje privolitve).
@@ -251,6 +256,13 @@ export default function factory(options: FactoryOptions = {}): AstroIntegration 
             plugins: [tailwindcss(), virtualModules(() => runtimeConfig, () => themeFile)],
           },
         });
+      },
+
+      'astro:build:done': async ({ dir, logger }) => {
+        const file = new URL('_headers', dir);
+        const existing = existsSync(file) ? await readFile(file, 'utf8') : undefined;
+        await writeFile(file, buildHeaders(existing, { noindex: runtimeConfig.robots.noindex }));
+        logger.info(`_headers: noindex za *.workers.dev${runtimeConfig.robots.noindex ? ' in za vse strani' : ''}.`);
       },
 
       'astro:config:done': ({ injectTypes }) => {

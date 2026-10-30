@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { detectSiteEnv } from '../src/preview.ts';
+import { detectNoindex, detectSiteEnv } from '../src/preview.ts';
 
 describe('detectSiteEnv', () => {
   const env = (vars: Record<string, string>) => detectSiteEnv(vars).env;
@@ -20,4 +20,17 @@ describe('detectSiteEnv', () => {
     assert.equal(env({ SITE_ENV: 'preview', GITHUB_REF_NAME: 'main' }), 'preview');
   });
   it('neznan SITE_ENV je napaka', () => assert.throws(() => detectSiteEnv({ SITE_ENV: 'staging' }), /SITE_ENV/));
+});
+
+describe('detectNoindex', () => {
+  it('privzeto izklopljen', () => {
+    assert.equal(detectNoindex({}), false);
+    assert.equal(detectNoindex({ SITE_NOINDEX: '' }), false);
+    assert.equal(detectNoindex({ SITE_NOINDEX: 'false' }), false);
+  });
+  it('true ali 1 (tudi iz GitHub Actions boolean vhoda)', () => {
+    assert.equal(detectNoindex({ SITE_NOINDEX: 'true' }), true);
+    assert.equal(detectNoindex({ SITE_NOINDEX: '1' }), true);
+  });
+  it('neznana vrednost je napaka', () => assert.throws(() => detectNoindex({ SITE_NOINDEX: 'da' }), /SITE_NOINDEX/));
 });

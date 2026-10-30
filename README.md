@@ -25,7 +25,7 @@ Potrebuješ Node 22.23.4 (`nvm use`, glej `.nvmrc`; Astro 7.4 zahteva ≥ 22.23.
 
 ## CI
 
-GitHub Actions, brez deploya (Cloudflare Pages pride v fazi 4). Vsi workflowi imajo `permissions: contents: read`, časovno omejitev in akcije pripete na commit SHA (verzija v komentarju); posodablja jih Dependabot (`.github/dependabot.yml`, tedensko, 3 dni zamika kot `minimumReleaseAge`).
+GitHub Actions; deploy strani strank na Cloudflare Workers (glej Deploy spodaj). Vsi workflowi imajo `permissions: contents: read`, časovno omejitev in akcije pripete na commit SHA (verzija v komentarju); posodablja jih Dependabot (`.github/dependabot.yml`, tedensko, 3 dni zamika kot `minimumReleaseAge`).
 
 **`.github/workflows/ci.yml`** (PR in push na `main`; nov tek na istem branchu prekliče starega):
 
@@ -36,7 +36,7 @@ GitHub Actions, brez deploya (Cloudflare Pages pride v fazi 4). Vsi workflowi im
 
 Build teče s `SITE_ENV=production`: na PR-ju je `GITHUB_REF_NAME` npr. `5/merge`, kar bi bil preview (noindex) in Lighthouse SEO bi padel. Lighthouse in Playwright uporabljata Chrome s slike `ubuntu-24.04` (`CHROME_PATH=/usr/bin/google-chrome`).
 
-**`.github/workflows/site.yml`** – reusable workflow za repozitorije strank: `install --frozen-lockfile`, `build`, `check`, `check:tokens`, `test`, `lighthouse`, na pushu v `main` še `check:todo` (preview build sme vsebovati TODO). Vhod `brief` nastavi `BRIEF` (`primer` v site-template, prazno pri strankah). Klic na tagu, istem kot paket `@e-visuals-studio/core`:
+**`.github/workflows/site.yml`** – reusable workflow za repozitorije strank. Job `site`: `install --frozen-lockfile`, `build`, `check`, `check:tokens`, `test`, `lighthouse`, na pushu v `main` še `check:todo` (preview build sme vsebovati TODO). Vhod `brief` nastavi `BRIEF` (`primer` v site-template, prazno pri strankah). Za njim deploy (glej Deploy). Klic na tagu, istem kot paket `@e-visuals-studio/core`:
 
 ```yaml
 jobs:
@@ -44,11 +44,33 @@ jobs:
     uses: e-visuals-studio/factory-core/.github/workflows/site.yml@vX.Y.Z # isti tag kot paket; posodobi ga pnpm core:update
     permissions:
       contents: read
+      pull-requests: write # komentar s preview povezavo
     with:
       brief: primer # samo v site-template
+      worker-name: site-template # brez tega ni deploya
+      cloudflare-account-id: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      site-url: https://factory.krizaj.net # samo, če domena ni iz briefa
+      noindex: true # samo za izmišljen primer
+    secrets:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 ```
 
-`concurrency` določi klicoči workflow; `site.yml` je nima, ker bi se z isto skupino teka medsebojno blokirala.
+`concurrency` določi klicoči workflow; `site.yml` ga na nivoju workflowa nima, ker bi se z isto skupino teka medsebojno blokirala (deploy joba imata svoje skupine).
+
+### Deploy (Cloudflare Workers static assets)
+
+Stran je Worker samo s statičnimi datotekami (`wrangler.jsonc` v repozitoriju stranke, `wrangler` kot devDependency); zahteve za datoteke ne kličejo Workerja in so brezplačne. GitHub Actions zgradi in naloži, Cloudflare ne gradi ničesar. Oba joba čakata na zelen job `site` (tudi Lighthouse).
+
+| Job | Kdaj | Kaj |
+| --- | --- | --- |
+| `deploy (preview)` | PR iz istega repozitorija (ne fork, ne Dependabot) | build `SITE_ENV=preview` (noindex, `robots.txt` `Disallow`, brez analitike) → `wrangler versions upload --preview-alias pr-<št.>` (verzija se ne objavi) → komentar na PR s povezavo `https://pr-<št.>-<worker>.<podomena>.workers.dev`, ki se ob novem pushu posodobi |
+| `deploy (produkcija)` | push na `main` | build `SITE_ENV=production` (+ `SITE_NOINDEX` pri `noindex: true`) → `wrangler deploy` → smoke test: `robots.txt` na produkcijski domeni (iz vrstice `Sitemap`) mora biti enak zgrajenemu, `/` vrne 200 |
+
+- **noindex**: core ob buildu zapiše `dist/_headers` (na konec morebitnega `public/_headers`) s pravilom `https://:version.:subdomain.workers.dev/*` → `X-Robots-Tag: noindex` (preview URL-ji in produkcijski `*.workers.dev`; Cloudflare ga za razliko od Pages ne doda sam), pri `SITE_NOINDEX=true` še `/*`. `_headers` velja samo za statične datoteke, ne za odgovore Workerja.
+- **`SITE_NOINDEX=true`**: produkcijski build z meta noindex in `X-Robots-Tag`, `robots.txt` ostane odprt (crawler mora noindex videti). Preview (`SITE_ENV=preview`) zapre tudi `robots.txt`.
+- **Preskok** brez napake (razlog v povzetku joba): ni `worker-name`, ni secreta ali Account ID, PR iz forka ali od Dependabota, Worker še ne obstaja (preview pred prvim produkcijskim deployem). Smoke test je samo opozorilo, dokler custom domena ne odgovarja prek Cloudflara.
+- **Token**: Cloudflare nima OIDC za GitHub Actions, zato dolgoživ API token z eno pravico (**Account → Workers Scripts → Edit**), za en račun (račun na stranko), z rokom veljavnosti; samo v `env` koraka z wranglerjem. Custom domeno doda človek v dashboardu, zato token nima pravic za DNS.
+- **Rollback**: dashboard → Worker → Deployments → izbrana verzija → Deploy, ali `pnpm exec wrangler rollback <id-verzije>` z lastnim tokenom.
 
 **Zaščita `main`** (ruleset v obeh repozitorijih): spremembe samo prek PR-ja z zelenimi checki iz CI, brez force pusha in brisanja. Pregled drugega človeka ni obvezen; admin ni izvzet.
 
@@ -93,7 +115,9 @@ Integracija:
 2. sicer branch iz `CF_PAGES_BRANCH` ali `GITHUB_REF_NAME` (GitHub Actions): vse razen `main` je preview,
 3. sicer produkcija (lokalni build).
 
-Preview: `robots.txt` z `Disallow: /`, `<meta name="robots" content="noindex, nofollow">` na vseh straneh in brez analitike. Za Lighthouse in e2e na CI zato nastavi `SITE_ENV=production` (sicer SEO ocena pade zaradi noindex).
+Preview: `robots.txt` z `Disallow: /`, `<meta name="robots" content="noindex, nofollow">` in `X-Robots-Tag: noindex` (`_headers`) na vseh straneh, brez analitike. Za Lighthouse in e2e na CI zato nastavi `SITE_ENV=production` (sicer SEO ocena pade zaradi noindex).
+
+`SITE_NOINDEX=true` (neodvisno od preview): produkcijski build, a meta noindex in `X-Robots-Tag: noindex`; `robots.txt` ostane odprt. Za javne strani, ki ne smejo v iskalnike (izmišljen primer na `factory.krizaj.net`).
 
 ## Brief (`@e-visuals-studio/core/brief`)
 
