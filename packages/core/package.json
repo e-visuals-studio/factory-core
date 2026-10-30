@@ -1,6 +1,6 @@
 {
   "name": "@e-visuals-studio/core",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Jedro Website Factory: SEO, layouti, bloki in tokeni za Astro 7 + Tailwind 4",
   "license": "MIT",
   "type": "module",
