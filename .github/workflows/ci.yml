@@ -1,0 +1,90 @@
+# CI za factory-core: build, preverjanja, testi, Lighthouse in varnost (glej README, CI).
+# Akcije so pripete na commit SHA (verzija v komentarju); posodablja jih Dependabot.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    name: build, testi, Lighthouse
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      # Na PR-ju je GITHUB_REF_NAME npr. "5/merge" → preview build (noindex) in Lighthouse SEO pade.
+      # Ničesar ne objavljamo, zato gradimo kot produkcijo.
+      SITE_ENV: production
+      # Chrome je nameščen na sliki ubuntu-24.04; uporabljata ga Lighthouse in Playwright.
+      CHROME_PATH: /usr/bin/google-chrome
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+
+      - name: pnpm prek corepacka
+        run: |
+          corepack enable
+          pnpm --version
+          echo "PNPM_STORE=$(pnpm store path --silent)" >> "$GITHUB_ENV"
+
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ env.PNPM_STORE }}
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('.nvmrc', 'pnpm-lock.yaml') }}
+          restore-keys: pnpm-store-${{ runner.os }}-
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm check
+      - run: pnpm check:tokens
+      - name: unit testi core
+        run: pnpm test
+      - name: Chrome
+        run: '"$CHROME_PATH" --version'
+      - run: pnpm test:e2e
+      - run: pnpm lighthouse
+
+  security:
+    name: varnost (gitleaks, pnpm audit)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      GITLEAKS_VERSION: 8.30.1
+      GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # gitleaks pregleda celotno zgodovino
+          persist-credentials: false
+
+      # gitleaks-action za organizacije zahteva licenčni ključ, zato CLI iz uradne izdaje s preverjenim checksumom.
+      - name: gitleaks (celotna zgodovina)
+        run: |
+          tarball="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -sSfL -o "$RUNNER_TEMP/$tarball" "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/$tarball"
+          echo "${GITLEAKS_SHA256}  $RUNNER_TEMP/$tarball" | sha256sum --check --strict
+          tar -xzf "$RUNNER_TEMP/$tarball" -C "$RUNNER_TEMP" gitleaks
+          "$RUNNER_TEMP/gitleaks" git --log-opts="--all" --redact --verbose .
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+
+      # pnpm audit bere samo pnpm-lock.yaml, namestitev ni potrebna.
+      - name: pnpm audit --prod (pade pri high/critical)
+        run: |
+          corepack enable
+          pnpm audit --prod --audit-level high

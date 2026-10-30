@@ -1,0 +1,13 @@
+# Posodablja akcije v workflowih, pripete na commit SHA (verzija v komentarju se posodobi z njimi).
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    # Kot minimumReleaseAge za npm: nove verzije šele po 3 dneh.
+    cooldown:
+      default-days: 3
+    groups:
+      actions:
+        patterns: ['*']

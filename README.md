@@ -23,6 +23,35 @@ Potrebuješ Node 22.23.4 (`nvm use`, glej `.nvmrc`; Astro 7.4 zahteva ≥ 22.23.
 | `pnpm lighthouse:umami` | build z Umami (lokalni stub skripte, lažen ID) + Lighthouse CI |
 | `pnpm test:e2e` | Playwright testi analitike in privolitve: zgradi playground za `none`, `umami` in `ga4` (`playground/dist-e2e/`), zažene `astro preview` in preveri banner, Consent Mode, dogodke in preklic; Chromium iz `CHROME_PATH` ali `pnpm exec playwright install chromium` |
 
+## CI
+
+GitHub Actions, brez deploya (Cloudflare Pages pride v fazi 4). Vsi workflowi imajo `permissions: contents: read`, časovno omejitev in akcije pripete na commit SHA (verzija v komentarju); posodablja jih Dependabot (`.github/dependabot.yml`, tedensko, 3 dni zamika kot `minimumReleaseAge`).
+
+**`.github/workflows/ci.yml`** (PR in push na `main`; nov tek na istem branchu prekliče starega):
+
+| Job | Koraki |
+| --- | --- |
+| `build, testi, Lighthouse` | Node iz `.nvmrc`, pnpm prek corepacka, predpomnjen pnpm store, `pnpm install --frozen-lockfile`, `build`, `check`, `check:tokens`, `test`, `test:e2e`, `lighthouse` |
+| `varnost (gitleaks, pnpm audit)` | gitleaks CLI (uradna izdaja, preverjen SHA-256) na celotni zgodovini; `pnpm audit --prod --audit-level high` (pade pri high/critical) |
+
+Build teče s `SITE_ENV=production`: na PR-ju je `GITHUB_REF_NAME` npr. `5/merge`, kar bi bil preview (noindex) in Lighthouse SEO bi padel. Lighthouse in Playwright uporabljata Chrome s slike `ubuntu-24.04` (`CHROME_PATH=/usr/bin/google-chrome`).
+
+**`.github/workflows/site.yml`** – reusable workflow za repozitorije strank: `install --frozen-lockfile`, `build`, `check`, `check:tokens`, `test`, `lighthouse`, na pushu v `main` še `check:todo` (preview build sme vsebovati TODO). Vhod `brief` nastavi `BRIEF` (`primer` v site-template, prazno pri strankah). Klic (pripet na commit taga):
+
+```yaml
+jobs:
+  site:
+    uses: e-visuals-studio/factory-core/.github/workflows/site.yml@<commit SHA> # vX.Y.Z
+    permissions:
+      contents: read
+    with:
+      brief: primer # samo v site-template
+```
+
+`concurrency` določi klicoči workflow; `site.yml` je nima, ker bi se z isto skupino teka medsebojno blokirala.
+
+**Zaščita `main`** (ruleset v obeh repozitorijih): spremembe samo prek PR-ja z zelenimi checki iz CI, brez force pusha in brisanja. Pregled drugega človeka ni obvezen; admin ni izvzet.
+
 ## Uporaba v strani stranke
 
 Nova stran nastane iz [`e-visuals-studio/site-template`](https://github.com/e-visuals-studio/site-template), ki vse nastavitve vzame iz `brief.yaml` (glej Brief spodaj). Ročna uporaba:

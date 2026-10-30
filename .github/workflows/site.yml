@@ -1,0 +1,65 @@
+# Reusable workflow za repozitorije strank (site-template, client-*). Brez deploya (faza 4).
+# Klic iz repozitorija stranke (concurrency in sprožilce določi klicoči workflow):
+#
+#   jobs:
+#     site:
+#       uses: e-visuals-studio/factory-core/.github/workflows/site.yml@<commit SHA> # vX.Y.Z
+#       permissions:
+#         contents: read
+#
+# Tu ni `concurrency`: z isto skupino kot klicoči workflow bi se teka medsebojno blokirala.
+name: Stran stranke
+
+on:
+  workflow_call:
+    inputs:
+      brief:
+        description: 'Vrednost BRIEF za build: "primer" (izmišljen primer v site-template) ali prazno (brief.yaml stranke).'
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  site:
+    name: build, preverjanja, Lighthouse
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      BRIEF: ${{ inputs.brief }}
+      # Na PR-ju bi bil build preview (noindex) in Lighthouse SEO bi padel; ničesar ne objavljamo.
+      SITE_ENV: production
+      CHROME_PATH: /usr/bin/google-chrome
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+
+      - name: pnpm prek corepacka
+        run: |
+          corepack enable
+          pnpm --version
+          echo "PNPM_STORE=$(pnpm store path --silent)" >> "$GITHUB_ENV"
+
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ env.PNPM_STORE }}
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('.nvmrc', 'pnpm-lock.yaml') }}
+          restore-keys: pnpm-store-${{ runner.os }}-
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm check
+      - run: pnpm check:tokens
+      - run: pnpm test
+      - run: pnpm lighthouse
+
+      # Samo produkcija (push na main); preview build (PR, drugi branchi) sme vsebovati TODO.
+      - name: check:todo (produkcija)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: pnpm check:todo
