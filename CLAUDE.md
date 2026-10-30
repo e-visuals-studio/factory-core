@@ -49,3 +49,10 @@ pnpm build && pnpm check:tokens && pnpm test
 Vse mora uspeti. Pri spremembah blokov, layouta ali fontov poženi še `pnpm check` in `pnpm lighthouse` (≥ 95 v vseh kategorijah, mobilno).
 Sprememba v `packages/core` dobi changeset (`pnpm changeset`). Format briefa (`src/brief/`) spreminjaj samo združljivo ali z major verzijo – brief izpolnjujejo vse stranke.
 Pri spremembah analitike, bannerja, `<Footer>` ali `<Contact>` še `pnpm test:e2e` in `pnpm lighthouse:umami`.
+
+## CI in `main`
+
+- `main` je zaščiten z rulesetom: vse gre prek PR-ja, ki ga združiš šele, ko sta zelena oba joba iz `.github/workflows/ci.yml` (build/testi/Lighthouse in varnost: gitleaks, `pnpm audit --prod` brez high/critical). Brez force pusha, brez obhoda checkov.
+- CI teče s `SITE_ENV=production`; lokalno ga ponoviš z `SITE_ENV=production CHROME_PATH=… pnpm build && … pnpm lighthouse`.
+- Akcije v workflowih samo pripete na commit SHA z verzijo v komentarju (`uses: owner/akcija@<sha> # vX.Y.Z`), `permissions: contents: read`, `timeout-minutes`. Nove akcije samo z OSI licenco; gitleaks kot CLI s preverjenim checksumom, ne `gitleaks-action` (licenca za organizacije).
+- `site.yml` je API za vse repozitorije strank: spremembe vhodov samo združljive, sicer nova major verzija.
