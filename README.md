@@ -92,7 +92,7 @@ const { brief, todos } = await loadBrief('brief.yaml'); // + preveri slike v ass
 **Zdaj: git tag.** Stran stranke namesti core neposredno iz tega (javnega) repozitorija:
 
 ```json
-"@e-visuals-studio/core": "github:e-visuals-studio/factory-core#v0.1.0&path:packages/core"
+"@e-visuals-studio/core": "github:e-visuals-studio/factory-core#v0.2.0&path:packages/core"
 ```
 
 pnpm ob namestitvi požene `prepare` (`tsc` → `dist/`). Ker pnpm 10 build skripte odvisnosti privzeto blokira, mora `pnpm-workspace.yaml` stranke dovoliti točno to referenco s commitom taga (ime paketa samo ne zadošča; pnpm ob napaki izpiše točen zapis):
