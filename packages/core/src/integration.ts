@@ -102,6 +102,21 @@ const CONFIG_ID = 'virtual:factory/config';
 const THEME_ID = 'virtual:factory/theme.css';
 const ANALYTICS_ID = 'virtual:factory/analytics';
 const ANALYTICS_COMPONENTS = { none: 'None', umami: 'Umami', plausible: 'Plausible', ga4: 'Ga4' } as const;
+const SHARP_SERVICE = 'astro/assets/services/sharp';
+const GUARDED_SERVICE = '@e-visuals-studio/core/image-service';
+
+type ImageServiceSetting = NonNullable<NonNullable<import('astro').AstroUserConfig['image']>['service']>;
+type ImageServiceConfig = Extract<ImageServiceSetting, { entrypoint: string }>;
+
+/** Privzeti sharp zamenja s servisom, ki zavrne HEIF/AVIF vhod; drugačnega servisa ne spreminja. */
+function guardImageService(service: ImageServiceSetting) {
+  const guard = (s: ImageServiceConfig) => (s.entrypoint === SHARP_SERVICE ? { ...s, entrypoint: GUARDED_SERVICE } : s);
+  const targets = 'entrypoint' in service ? [guard(service)] : [guard(service.build), guard(service.runtime)];
+  return {
+    service: targets.length === 1 ? targets[0]! : { build: targets[0]!, runtime: targets[1]! },
+    guarded: targets.every((t) => t.entrypoint === GUARDED_SERVICE),
+  };
+}
 
 export default function factory(options: FactoryOptions = {}): AstroIntegration {
   const fontRoles = Object.keys(options.fonts ?? {});
@@ -214,9 +229,19 @@ export default function factory(options: FactoryOptions = {}): AstroIntegration 
           injectRoute({ pattern: '/rss.xml', entrypoint: new URL('src/routes/rss.xml.ts', PACKAGE_ROOT), prerender: true });
         }
 
+        // 5) Vhodne slike HEIF/AVIF zavrne image service pred sharpom (glej src/image/heif.ts)
+        const image = guardImageService(config.image.service);
+        if (!image.guarded) {
+          logger.warn('Projekt uporablja svoj image service: varovalo proti vhodnim slikam HEIF/AVIF iz core ni aktivno.');
+        }
+
         updateConfig({
+          image: { service: image.service },
           // CSS iz tokenov je majhen (~5 KB gzip): inline odstrani render-blocking zahtevo (kritični CSS).
           ...(config.build.inlineStylesheets === 'auto' && { build: { inlineStylesheets: 'always' } }),
+          // Astro 7 privzeto ('jsx') pobriše presledke med inline elementi čez novo vrstico in zlepi besede
+          // (»Telefon:« + <a> v novi vrstici); bloki in strani strank računajo na obnašanje iz Astro 6.
+          ...(config.compressHTML === 'jsx' && { compressHTML: true }),
           integrations,
           fonts: Object.entries(options.fonts ?? {}).map(([role, font]) => ({
             ...font,
@@ -279,6 +304,8 @@ function entryCss(theme: string, srcDir: string): string {
     `@source ${JSON.stringify(srcDir)};`,
     `@import ${JSON.stringify(coreSrc + 'styles/base.css')};`,
     `@source ${JSON.stringify(coreSrc)};`,
+    // Image service nima markupa; imena metod v njem bi Tailwind sicer prebral kot razrede.
+    `@source not ${JSON.stringify(coreSrc + 'image/')};`,
     theme,
     '',
   ].join('\n');

@@ -1,7 +1,7 @@
 # CLAUDE.md – factory-core
 
 Jedro Website Factory. Celoten plan: `WEBSITE_FACTORY_PLAN.md` (preberi ga pred vsako fazo).
-Struktura in ukazi: `README.md`. Node ≥ 22.12 (`nvm use`), pnpm prek corepacka.
+Struktura in ukazi: `README.md`. Node 22.23.4 (`nvm use`), pnpm prek corepacka.
 
 ## Pravila
 
@@ -17,11 +17,15 @@ Struktura in ukazi: `README.md`. Node ≥ 22.12 (`nvm use`), pnpm prek corepacka
 - AI slike (`ai: true`) samo kot ilustracija: nikoli ljudje, ekipa, objekt ali izdelek stranke, ne v referencah. Na strani so označene kot AI ilustracija.
 - Post brez slike je v redu: OG slika se generira samodejno (`ogImage()`), ne išči slike drugje.
 - Slike samo prek `<Image>` iz `astro:assets`; LCP slika s `priority`, ostale lazy.
+- Vhodne slike samo JPG, PNG ali WebP. HEIF družina (AVIF, HEIC – iPhone fotografije) ni dovoljena kot vhod (libheif, GHSA-26w7-cxv4-gfx2): zavrnejo jo shema briefa, `licensedImageSchema` in image service iz core (po vsebini, ne po končnici). Ne obidi tega z lastnim image servisom ali preimenovanjem datoteke; sliko pretvori. AVIF je dovoljen samo kot izhodni format (`<Image format="avif">`).
+- Faza 4 (CMS, še ni narejeno): Sveltia mora ob zavrnjeni HEIC/AVIF sliki pokazati jasno sporočilo v slovenščini (npr. v `hint` polja in pri zavrnitvi); preveri, ali jo lahko ob nalaganju v brskalniku pretvori v WebP/JPG (glej plan, Faza 4).
 
 **Komponente in strani**
 - Vsaka stran uporablja `<BaseLayout>` (ta vključi `<SEO>`): title, description (50–160 znakov), en `<h1>` na stran.
 - Nove komponente najprej kot blok v `packages/core/src/blocks/`; stilirane samo s tokeni, brez JavaScripta (interaktivnost samo kot Astro island z razlogom).
 - Nobenih izmišljenih podatkov o stranki (naslovi, telefoni, številke, reference) – manjkajoče označi s TODO.
+- `src/fetch.ts` je v Astro 7 rezervirano ime (advanced routing); ne ustvarjaj datoteke s tem imenom.
+- Astro 7 pod agentom `astro dev`/`astro preview` zažene v ozadju (preveri `astro dev status`, ustavi z `astro dev stop` / `astro preview stop`). Za strežnik v ospredju (testi, Playwright `webServer`) uporabi `--ignore-lock`.
 
 **Analitika in piškotki**
 - Analitika samo prek `factory({ analytics })`. Nikoli ročno vstavljenih sledilnih skript (GA, GTM, Meta pixel, Hotjar …) v strani ali bloke.

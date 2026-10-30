@@ -27,8 +27,10 @@ export default defineConfig({
       },
     },
   ],
+  // --ignore-lock: Astro 7 pod AI agentom (Claude Code) preview sicer zažene v ozadju in se takoj vrne,
+  // Playwright pa potrebuje strežnik v ospredju, ki ga ob koncu testov sam ustavi.
   webServer: (Object.keys(BUILDS) as BuildName[]).map((name) => ({
-    command: `pnpm --filter playground exec astro preview --outDir ${outDir(name)} --port ${BUILDS[name].port}`,
+    command: `pnpm --filter playground exec astro preview --ignore-lock --outDir ${outDir(name)} --port ${BUILDS[name].port}`,
     url: `${baseURL(name)}/`,
     reuseExistingServer: false,
     timeout: 60_000,
