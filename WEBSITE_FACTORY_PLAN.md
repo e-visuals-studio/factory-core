@@ -19,11 +19,11 @@ Cilj procesa: nova stran od briefa do produkcije v 1–2 dneh.
 
 ## Arhitektura in stack
 
-Stack je Astro 6 + Tailwind 4 + Sveltia CMS, gostovanje pa na Cloudflare Pages. Ob objavi novice CMS naredi commit v Git, ta sproži build in posodobljena stran je v CDN-ju v približno minuti.
+Stack je Astro 7 + Tailwind 4 + Sveltia CMS, gostovanje pa na Cloudflare Pages. Ob objavi novice CMS naredi commit v Git, ta sproži build in posodobljena stran je v CDN-ju v približno minuti.
 
 | Plast | Izbira | Zakaj |
 | --- | --- | --- |
-| Framework | [Astro 6](https://astro.build/blog/astro-6/) | Privzeto 0 KB JS, content collections, `astro:assets` za slike; stabilen od marca 2026, MIT, od januarja 2026 v lasti Cloudflare |
+| Framework | [Astro 7](https://docs.astro.build/en/guides/upgrade-to/v7/) | Privzeto 0 KB JS, content collections, `astro:assets` za slike; MIT, od januarja 2026 v lasti Cloudflare. Nadgrajeno s 6 na 7 oktobra 2026 zaradi GHSA-26w7-cxv4-gfx2 (RCE prek AVIF, za 6.x ni popravka) |
 | Styling | Tailwind CSS 4 + design tokeni (`tokens.json`) | Design stranke = zamenjava tokenov in nekaj blokov |
 | Admin UI | [Sveltia CMS](https://github.com/sveltia/sveltia-cms) na `/admin` | Git-based, brez baze, deluje na čisto statičnem buildu, sodoben naslednik Decap CMS |
 | Prijava v CMS | GitHub OAuth prek majhnega Cloudflare Workerja (`sveltia-cms-auth`) | En Worker za vse stranke |
@@ -146,11 +146,11 @@ Statična stran ima majhno napadno površino. Realna tveganja so drugje: dobavna
 | Področje | Ukrep | Kje |
 | --- | --- | --- |
 | HTTP headerji | HSTS (z `preload`), `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` (kamera, mikrofon, lokacija izklopljeni), `frame-ancestors 'none'`, COOP | `public/_headers` iz core |
-| CSP | Astro 6 `security.csp` (hashi za skripte in stile) + stroža politika v `_headers`; `Report-Only` faza ob prvem zagonu, ker meta CSP ne pošilja poročil | `astro.config`, `_headers` |
+| CSP | Astro `security.csp` (hashi za skripte in stile) + stroža politika v `_headers`; `Report-Only` faza ob prvem zagonu, ker meta CSP ne pošilja poročil | `astro.config`, `_headers` |
 | Skripte tretjih oseb | Čim manj; GA samo po privolitvi; zemljevidi in YouTube kot "facade" (slika + klik); fonti self-hostani | core komponente |
 | Dobavna veriga | Zaklenjen `pnpm-lock.yaml`, `minimumReleaseAge` (npr. 3 dni) za nove verzije, privzeto blokirani `postinstall` skripti, Renovate z zamikom, `pnpm audit` v CI | `pnpm-workspace.yaml`, CI |
 | GitHub | Obvezen 2FA v organizaciji, zaščita `main` brancha za kodo, secret scanning + push protection, Dependabot alerts, Semgrep CE (CodeQL in secret scanning sta na zasebnih repozitorijih plačljiva), `permissions: read` kot privzeto v Actions, deploy brez dolgoživih žetonov | nastavitve org + reusable workflow |
-| CMS | OAuth Worker omejen na dovoljene domene in repozitorije, minimalni scope; v CMS-ju prepovedan upload SVG (XSS), omejena velikost slik | Worker + `config.yml` |
+| CMS | OAuth Worker omejen na dovoljene domene in repozitorije, minimalni scope; v CMS-ju prepovedan upload SVG (XSS) in HEIF/AVIF (libheif, GHSA-26w7-cxv4-gfx2), omejena velikost slik; vhodne slike HEIF/AVIF zavrne tudi build (image service iz core) | Worker + `config.yml` |
 | Obrazci | ALTCHA, honeypot, rate limit na Workerju, validacija na strežniški strani, brez skrivnosti v klientu | Worker iz core |
 | Cloudflare | SSL Full (strict), Always HTTPS, min. TLS 1.2, brezplačna WAF pravila, Bot Fight Mode, DNSSEC, CAA zapis | checklist ob zagonu |
 | Domena in e-pošta | SPF, DKIM, DMARC (najprej `p=none` z poročili, nato `quarantine`); domena brez e-pošte dobi "null" SPF in DMARC `reject` | DNS predloga |
@@ -433,6 +433,7 @@ Gradi po fazah, vsaka faza je ena seja v Claude Code in en PR. Naslednja se zač
 - [ ] **Faza 2 – consent + GA:** Consent Mode v2, banner, nastavitve iz `site.config.ts`
 - [ ] **Faza 3 – site-template:** Astro projekt na `@e-visuals-studio/core`, `brief.yaml`, primer strani, označen kot GitHub Template
 - [ ] **Faza 4 – CMS:** Sveltia na `/admin`, kolekcije blog/novice/galerija, OAuth Worker na Cloudflare, kontaktni obrazec z Workerjem, sendMail() adapter in e-poštne predloge
+  - **Slike HEIC/AVIF iz CMS-ja:** iPhone fotografije so HEIC, build pa vhodne slike HEIF družine zavrne (core v0.2.0, GHSA-26w7-cxv4-gfx2). Stranka mora že v CMS-ju dobiti jasno sporočilo v slovenščini, ne šele padca builda. Iz dokumentacije Sveltie (oktober 2026): image polje ima `accept` (npr. `accept: image/jpeg,image/png,image/webp`), `media_libraries.default.config` ima `max_file_size` in `transformations.raster_image`, ki ob nalaganju pretvori sliko, ključ je izvorni format, izhod samo `format: webp` (+ `quality`, `width`, `height`). Dokumentacija ne pove, ali Sveltia sprejme in pretvori HEIC (brskalniki razen Safarija HEIC ne dekodirajo) in ali lahko ob zavrnitvi prikaže lastno sporočilo. **Preveri v fazi 4** s pravo iPhone fotografijo v Chromu, Firefoxu in Safariju (iOS in macOS): (1) ali `transformations` HEIC pretvori v WebP, (2) kaj stori `accept` brez `image/heic` (iOS Safari lahko ob nalaganju sam pretvori v JPEG), (3) ali gre sporočilo o zavrnitvi prilagoditi. Če pretvorba ne deluje povsod: `accept` brez HEIC/AVIF, slovenski `hint` pri vsakem image polju (»Fotografije z iPhona: Nastavitve → Kamera → Formati → Najbolj združljivo, ali pošlji kot JPG«) in build napaka kot zadnja varovalka.
 - [ ] **Faza 5 – CI/CD:** reusable workflow (build, Lighthouse CI, axe, link check), Cloudflare Pages, Renovate, varnostni headerji in CSP, performance proračun, gitleaks, Semgrep CE, preverjanje licenc, Uptime Kuma na Proxmoxu + ukaz monitor add
 - [ ] **Faza 6 – agenti:** `.claude/agents/*`, `CLAUDE.md`, skill `/new-client-site`, ukaz `factory sync`
 - [ ] **Faza 7 – pilot:** ena prava stran od briefa do produkcije, zapis časa in težav, popravki procesa

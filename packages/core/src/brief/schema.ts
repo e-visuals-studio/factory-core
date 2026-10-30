@@ -6,6 +6,7 @@
  * Neobvezni seznami (pogosta vprašanja, reference, omrežja) so lahko `[]`, a morajo biti zapisani.
  */
 import { z } from 'astro/zod';
+import { HEIF_EXTENSION, heifMessage } from '../image/heif.ts';
 
 export const TODO_PATTERN = /^TODO\b/;
 export type Todo = `TODO${string}`;
@@ -32,9 +33,12 @@ const metaDescription = z
 
 const image = z.strictObject({
   /** Pot do slike od korena projekta, npr. `src/assets/placeholders/hero.jpg`. Mora imeti zapis v assets.licenses.yaml. */
-  datoteka: z.string().regex(/^src\/assets\/.+\.(jpe?g|png|webp|avif)$/i, {
-    error: 'slika mora biti v src/assets/ (jpg, png, webp, avif); manjkajoča slika = placeholder + TODO v alt',
-  }),
+  datoteka: z
+    .string()
+    .refine((path) => !HEIF_EXTENSION.test(path), { error: (issue) => heifMessage(String(issue.input), 'AVIF/HEIC'), abort: true })
+    .regex(/^src\/assets\/.+\.(jpe?g|png|webp)$/i, {
+      error: 'slika mora biti v src/assets/ (jpg, png, webp); manjkajoča slika = placeholder + TODO v alt',
+    }),
   alt: localized(),
 });
 

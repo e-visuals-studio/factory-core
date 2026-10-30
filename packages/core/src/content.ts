@@ -1,5 +1,6 @@
 import type { SchemaContext } from 'astro:content';
 import { z } from 'astro/zod';
+import { HEIF_EXTENSION, heifMessage } from './image/heif.ts';
 
 const required = (field: string) => z.string().trim().min(1, `${field} je obvezen.`);
 
@@ -9,7 +10,10 @@ const required = (field: string) => z.string().trim().min(1, `${field} je obveze
  */
 export const licensedImageSchema = ({ image }: SchemaContext) =>
   z.object({
-    src: image(),
+    // V content layerju je vrednost pot (`__ASTRO_IMAGE_./slika.avif`); vsebino preveri še image service.
+    src: image().refine((src) => typeof src !== 'string' || !HEIF_EXTENSION.test(src), {
+      error: (issue) => heifMessage(String(issue.input).replace(/^__ASTRO_IMAGE_/, ''), 'AVIF/HEIC'),
+    }),
     /** Opis za bralnike zaslona (dostopnost). */
     alt: required('alt'),
     /** Fotograf, stranka, orodje za AI sliko … */

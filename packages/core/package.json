@@ -1,7 +1,7 @@
 {
   "name": "@e-visuals-studio/core",
   "version": "0.1.0",
-  "description": "Jedro Website Factory: SEO, layouti, bloki in tokeni za Astro 6 + Tailwind 4",
+  "description": "Jedro Website Factory: SEO, layouti, bloki in tokeni za Astro 7 + Tailwind 4",
   "license": "MIT",
   "type": "module",
   "repository": {
@@ -28,6 +28,10 @@
     "./brief": {
       "types": "./dist/brief/index.d.ts",
       "default": "./dist/brief/index.js"
+    },
+    "./image-service": {
+      "types": "./dist/image/service.d.ts",
+      "default": "./dist/image/service.js"
     },
     "./tokens": {
       "types": "./dist/tokens/build-tokens.d.ts",
@@ -57,7 +61,7 @@
     "test": "node --test test/*.test.ts"
   },
   "peerDependencies": {
-    "astro": "^6.0.0"
+    "astro": "^7.2.8"
   },
   "dependencies": {
     "@astrojs/rss": "^4.0.19",
@@ -65,14 +69,14 @@
     "@fontsource/inter": "^5.3.0",
     "@tailwindcss/vite": "^4.3.3",
     "satori": "^0.63.2",
-    "sharp": "^0.34.5",
+    "sharp": "^0.35.5",
     "tailwindcss": "^4.3.3",
     "vanilla-cookieconsent": "^3.1.0",
     "yaml": "^2.9.1"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
-    "astro": "^6.4.8",
+    "astro": "^7.4.2",
     "typescript": "^5.9.3"
   }
 }

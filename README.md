@@ -1,6 +1,6 @@
 # factory-core
 
-Jedro Website Factory (glej `WEBSITE_FACTORY_PLAN.md`): pnpm monorepo s paketom `@e-visuals-studio/core` za Astro 6 + Tailwind 4.
+Jedro Website Factory (glej `WEBSITE_FACTORY_PLAN.md`): pnpm monorepo s paketom `@e-visuals-studio/core` za Astro 7 + Tailwind 4.
 
 ```
 packages/core   @e-visuals-studio/core – integracija, <BaseLayout>, <SEO>, JSON-LD, bloki, tokeni
@@ -9,7 +9,7 @@ playground      primer strani za lokalni preizkus (Mizarstvo Primer)
 
 ## Ukazi
 
-Potrebuješ Node ≥ 22.12 (`nvm use`) in pnpm prek corepacka (`corepack enable`).
+Potrebuješ Node 22.23.4 (`nvm use`, glej `.nvmrc`; Astro 7.4 zahteva ≥ 22.23.4) in pnpm prek corepacka (`corepack enable`).
 
 | Ukaz | Kaj naredi |
 | --- | --- |
@@ -53,6 +53,8 @@ Integracija:
 - fonte self-hosta prek Astro Fonts API; preload samo za `body`, podmnožica `latin`
 - generira OG slike (1200×630 PNG v barvah tokenov, satori + sharp): `/og/default.png` za strani brez slike in `/og/<kolekcija>/<id>.png` za poste brez slike (`ogImage('blog', post.id)`)
 - CSS vstavi inline (kritični CSS), če `build.inlineStylesheets` ni nastavljen
+- obdrži presledke med inline elementi kot v Astro 6 (`compressHTML: true`), če `compressHTML` ni nastavljen; privzeti `'jsx'` iz Astro 7 bi zlepil besede (»Telefon:« + povezava v novi vrstici)
+- privzeti sharp image service zamenja z `@e-visuals-studio/core/image-service`, ki zavrne **vhodne** slike HEIF družine (AVIF, HEIC) po vsebini datoteke, ne po končnici (libheif, GHSA-26w7-cxv4-gfx2); AVIF ostane izhodni format (`<Image format="avif">`). Lasten image service projekta ostane, a build izpiše opozorilo, da varovalo ni aktivno.
 
 ## Preview in produkcija
 
@@ -154,7 +156,7 @@ import { graph, website, localBusiness } from '@e-visuals-studio/core';
 
 Bloki: `Header`, `Hero`, `Features`, `About`, `Gallery`, `CTA`, `FAQ` (+ FAQPage JSON-LD), `Contact`, `BlogList`, `Footer`; 0 KB JavaScripta.
 JSON-LD helperji: `organization`, `localBusiness`, `website`, `article`, `breadcrumbList`, `faqPage`, `graph`.
-Content: `blogSchema` (neobvezna slika; če obstaja, so `alt`, `avtor`, `vir`, `licenca` obvezni, `ai` privzeto `false`), `licensedImageSchema`, `slugify()` (šumniki → s, c, z).
+Content: `blogSchema` (neobvezna slika; če obstaja, so `alt`, `avtor`, `vir`, `licenca` obvezni, `ai` privzeto `false`), `licensedImageSchema` (zavrne `.avif`/`.heic` z navodilom za pretvorbo v JPG, PNG ali WebP), `slugify()` (šumniki → s, c, z).
 
 Tokeni: DTCG format (`$value`/`$type`, izvoz Figma Variables / Tokens Studio), reference `{color.primary}`.
 Samostojno: `npx factory-tokens tokens.json --out theme.css`.
