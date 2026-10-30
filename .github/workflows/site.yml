@@ -1,4 +1,4 @@
-# Reusable workflow za repozitorije strank (site-template, client-*). Brez deploya (faza 4).
+# Reusable workflow za repozitorije strank (site-template, client-*): preverjanja in deploy na Cloudflare Workers.
 # Klic iz repozitorija stranke (concurrency in sprožilce določi klicoči workflow):
 #
 #   jobs:
@@ -6,8 +6,15 @@
 #       uses: e-visuals-studio/factory-core/.github/workflows/site.yml@vX.Y.Z # isti tag kot @e-visuals-studio/core (pnpm core:update)
 #       permissions:
 #         contents: read
+#         pull-requests: write # komentar s preview povezavo (reusable workflow ne dobi več pravic kot klicatelj)
+#       with:
+#         worker-name: client-ime # brez tega ni deploya
+#         cloudflare-account-id: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+#       secrets:
+#         CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 #
-# Tu ni `concurrency`: z isto skupino kot klicoči workflow bi se teka medsebojno blokirala.
+# Tu ni `concurrency` na nivoju workflowa: z isto skupino kot klicoči workflow bi se teka medsebojno blokirala.
+# Deploy joba imata svoje skupine (glej spodaj).
 name: Stran stranke
 
 on:
@@ -17,6 +24,26 @@ on:
         description: 'Vrednost BRIEF za build: "primer" (izmišljen primer v site-template) ali prazno (brief.yaml stranke).'
         type: string
         default: ''
+      worker-name:
+        description: 'Ime Cloudflare Workerja (male črke, številke, vezaji). Prazno = brez deploya.'
+        type: string
+        default: ''
+      cloudflare-account-id:
+        description: 'Cloudflare Account ID (ni skrivnost; v repozitoriju kot variable CLOUDFLARE_ACCOUNT_ID).'
+        type: string
+        default: ''
+      site-url:
+        description: 'Produkcijski URL, če ni iz briefa (gre v build kot SITE_URL). Prazno = domena iz briefa.'
+        type: string
+        default: ''
+      noindex:
+        description: 'Produkcija z X-Robots-Tag in meta noindex (npr. izmišljen primer na javni domeni).'
+        type: boolean
+        default: false
+    secrets:
+      CLOUDFLARE_API_TOKEN:
+        description: 'API token z Account → Workers Scripts → Edit za račun stranke.'
+        required: false
 
 permissions:
   contents: read
@@ -28,7 +55,7 @@ jobs:
     timeout-minutes: 20
     env:
       BRIEF: ${{ inputs.brief }}
-      # Na PR-ju bi bil build preview (noindex) in Lighthouse SEO bi padel; ničesar ne objavljamo.
+      # Na PR-ju bi bil build preview (noindex) in Lighthouse SEO bi padel; ta build se ne objavi.
       SITE_ENV: production
       CHROME_PATH: /usr/bin/google-chrome
     steps:
@@ -63,3 +90,244 @@ jobs:
       - name: check:todo (produkcija)
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: pnpm check:todo
+
+  deploy-preview:
+    name: deploy (preview)
+    needs: site
+    # Fork in Dependabot nimata secretov; brez worker-name ni deploya.
+    if: >-
+      inputs.worker-name != '' && github.event_name == 'pull_request'
+      && github.event.pull_request.head.repo.full_name == github.repository
+      && github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write
+    concurrency:
+      group: workers-${{ github.repository }}-pr-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+    env:
+      BRIEF: ${{ inputs.brief }}
+      SITE_ENV: preview
+      WORKER: ${{ inputs.worker-name }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - name: pogoji za deploy
+        id: pogoji
+        env:
+          HAS_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
+          ACCOUNT_ID: ${{ inputs.cloudflare-account-id }}
+        run: |
+          skip() { echo "### Preview preskočen" >> "$GITHUB_STEP_SUMMARY"; echo "$1" >> "$GITHUB_STEP_SUMMARY"; echo "::notice::Preview preskočen: $1"; echo "deploy=false" >> "$GITHUB_OUTPUT"; exit 0; }
+          [ "$HAS_TOKEN" = true ] || skip "Ni secreta CLOUDFLARE_API_TOKEN (README, Deploy)."
+          [ -n "$ACCOUNT_ID" ] || skip "Ni vhoda cloudflare-account-id (variable CLOUDFLARE_ACCOUNT_ID)."
+          alias="pr-${PR_NUMBER}"
+          if ! [[ "$WORKER" =~ ^[a-z0-9]([a-z0-9-]*[a-z0-9])?$ ]] || [ $(( ${#alias} + 1 + ${#WORKER} )) -gt 63 ]; then
+            echo "::error::worker-name \"$WORKER\": samo male črke, številke in vezaji; \"$alias-$WORKER\" mora imeti največ 63 znakov (DNS)."
+            exit 1
+          fi
+          echo "alias=$alias" >> "$GITHUB_OUTPUT"
+          echo "deploy=true" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.pogoji.outputs.deploy == 'true'
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: steps.pogoji.outputs.deploy == 'true'
+        with:
+          node-version-file: .nvmrc
+
+      - name: pnpm prek corepacka
+        if: steps.pogoji.outputs.deploy == 'true'
+        run: |
+          corepack enable
+          echo "PNPM_STORE=$(pnpm store path --silent)" >> "$GITHUB_ENV"
+
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: steps.pogoji.outputs.deploy == 'true'
+        with:
+          path: ${{ env.PNPM_STORE }}
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('.nvmrc', 'pnpm-lock.yaml') }}
+          restore-keys: pnpm-store-${{ runner.os }}-
+
+      - name: build (preview)
+        if: steps.pogoji.outputs.deploy == 'true'
+        env:
+          INPUT_SITE_URL: ${{ inputs.site-url }}
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm exec wrangler --version || { echo "::error::wrangler ni v devDependencies repozitorija (pnpm add -D wrangler)."; exit 1; }
+          if [ -n "$INPUT_SITE_URL" ]; then export SITE_URL="$INPUT_SITE_URL"; fi
+          pnpm build
+
+      - name: wrangler versions upload (preview)
+        id: upload
+        if: steps.pogoji.outputs.deploy == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ inputs.cloudflare-account-id }}
+          WRANGLER_SEND_METRICS: 'false'
+          ALIAS: ${{ steps.pogoji.outputs.alias }}
+        run: |
+          set -o pipefail
+          log="$RUNNER_TEMP/wrangler.log"
+          if ! pnpm exec wrangler versions upload --name "$WORKER" --preview-alias "$ALIAS" --message "PR #${PR_NUMBER} ${HEAD_SHA::7}" 2>&1 | tee "$log"; then
+            # Worker ustvari šele prvi produkcijski deploy (push na main).
+            if grep -qE '10007|does not exist' "$log"; then
+              echo "### Preview preskočen" >> "$GITHUB_STEP_SUMMARY"
+              echo "Worker \`$WORKER\` še ne obstaja; ustvari ga prvi produkcijski deploy (push na \`main\`)." >> "$GITHUB_STEP_SUMMARY"
+              echo "::notice::Worker $WORKER še ne obstaja – preview bo na voljo po prvem produkcijskem deployu."
+              echo "uploaded=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            exit 1
+          fi
+          urls=$(grep -oE 'https://[a-z0-9-]+\.[a-z0-9-]+\.workers\.dev' "$log" | sort -u || true)
+          alias_url=$(grep -E "^https://${ALIAS}-" <<< "$urls" | head -1 || true)
+          version_url=$(grep -vE "^https://${ALIAS}-" <<< "$urls" | head -1 || true)
+          if [ -z "$alias_url" ]; then
+            echo "::error::V izpisu wranglerja ni preview URL-ja z aliasom $ALIAS (preview_urls: true v wrangler.jsonc?)."
+            exit 1
+          fi
+          echo "alias_url=$alias_url" >> "$GITHUB_OUTPUT"
+          echo "version_url=$version_url" >> "$GITHUB_OUTPUT"
+          echo "uploaded=true" >> "$GITHUB_OUTPUT"
+          { echo "### Preview"; echo "$alias_url"; } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: komentar na PR
+        if: steps.upload.outputs.uploaded == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          ALIAS_URL: ${{ steps.upload.outputs.alias_url }}
+          VERSION_URL: ${{ steps.upload.outputs.version_url }}
+        run: |
+          marker='<!-- factory-preview -->'
+          body="${marker}
+          ### Preview
+
+          | | |
+          | --- | --- |
+          | **Povezava za ta PR** | ${ALIAS_URL} |
+          | Ta commit (\`${HEAD_SHA::7}\`) | ${VERSION_URL:-–} |
+
+          Preview build: noindex (meta, \`X-Robots-Tag\`, \`robots.txt\`), brez analitike. Produkcija se ne spremeni."
+          id=$(gh api "repos/$REPO/issues/$PR_NUMBER/comments" --paginate \
+            --jq ".[] | select(.user.login == \"github-actions[bot]\" and (.body | startswith(\"$marker\"))) | .id" | head -1)
+          if [ -n "$id" ]; then
+            gh api -X PATCH "repos/$REPO/issues/comments/$id" -f body="$body" > /dev/null
+          else
+            gh api -X POST "repos/$REPO/issues/$PR_NUMBER/comments" -f body="$body" > /dev/null
+          fi
+
+  deploy-production:
+    name: deploy (produkcija)
+    needs: site
+    if: inputs.worker-name != '' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    # Deploy se ne prekine na pol; naslednji počaka.
+    concurrency:
+      group: workers-${{ github.repository }}-production
+      cancel-in-progress: false
+    env:
+      BRIEF: ${{ inputs.brief }}
+      SITE_ENV: production
+      SITE_NOINDEX: ${{ inputs.noindex }}
+      WORKER: ${{ inputs.worker-name }}
+    steps:
+      - name: pogoji za deploy
+        id: pogoji
+        env:
+          HAS_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
+          ACCOUNT_ID: ${{ inputs.cloudflare-account-id }}
+        run: |
+          missing=""
+          [ "$HAS_TOKEN" = true ] || missing="secret CLOUDFLARE_API_TOKEN"
+          [ -n "$ACCOUNT_ID" ] || missing="${missing:+$missing in }vhod cloudflare-account-id"
+          if [ -n "$missing" ]; then
+            echo "### Produkcijski deploy preskočen" >> "$GITHUB_STEP_SUMMARY"
+            echo "Manjka $missing (README, Deploy)." >> "$GITHUB_STEP_SUMMARY"
+            echo "::warning::Produkcijski deploy preskočen: manjka $missing."
+            echo "deploy=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if ! [[ "$WORKER" =~ ^[a-z0-9]([a-z0-9-]*[a-z0-9])?$ ]] || [ ${#WORKER} -gt 63 ]; then
+            echo "::error::worker-name \"$WORKER\": samo male črke, številke in vezaji, največ 63 znakov."
+            exit 1
+          fi
+          echo "deploy=true" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.pogoji.outputs.deploy == 'true'
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: steps.pogoji.outputs.deploy == 'true'
+        with:
+          node-version-file: .nvmrc
+
+      - name: pnpm prek corepacka
+        if: steps.pogoji.outputs.deploy == 'true'
+        run: |
+          corepack enable
+          echo "PNPM_STORE=$(pnpm store path --silent)" >> "$GITHUB_ENV"
+
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: steps.pogoji.outputs.deploy == 'true'
+        with:
+          path: ${{ env.PNPM_STORE }}
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('.nvmrc', 'pnpm-lock.yaml') }}
+          restore-keys: pnpm-store-${{ runner.os }}-
+
+      - name: build (produkcija)
+        if: steps.pogoji.outputs.deploy == 'true'
+        env:
+          INPUT_SITE_URL: ${{ inputs.site-url }}
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm exec wrangler --version || { echo "::error::wrangler ni v devDependencies repozitorija (pnpm add -D wrangler)."; exit 1; }
+          if [ -n "$INPUT_SITE_URL" ]; then export SITE_URL="$INPUT_SITE_URL"; fi
+          pnpm build
+
+      - name: wrangler deploy
+        if: steps.pogoji.outputs.deploy == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ inputs.cloudflare-account-id }}
+          WRANGLER_SEND_METRICS: 'false'
+        run: pnpm exec wrangler deploy --name "$WORKER" --message "main ${GITHUB_SHA::7}"
+
+      # Primerja robots.txt na produkcijski domeni z zgrajenim; domena brez Cloudflara (custom domena še ni nastavljena) = opozorilo.
+      - name: smoke test
+        if: steps.pogoji.outputs.deploy == 'true'
+        run: |
+          origin=$(sed -n 's|^Sitemap: \(https://[^/]*\)/.*|\1|p' dist/robots.txt)
+          [ -n "$origin" ] || { echo "::error::dist/robots.txt nima vrstice Sitemap – produkcijski build?"; exit 1; }
+          not_connected() {
+            echo "::warning::$origin $1 – custom domena še ni povezana z Workerjem $WORKER (README, Deploy). Smoke test preskočen."
+            { echo "### Produkcija"; echo "Deploy uspel, smoke test preskočen: $origin $1."; } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          }
+          ok=""; via_cloudflare=""
+          for attempt in 1 2 3 4 5 6; do
+            if curl -sS -m 20 -D "$RUNNER_TEMP/h" -o "$RUNNER_TEMP/robots.txt" "$origin/robots.txt"; then
+              grep -qi '^server: *cloudflare' "$RUNNER_TEMP/h" || not_connected "ne odgovarja prek Cloudflara"
+              via_cloudflare=1
+              if cmp -s "$RUNNER_TEMP/robots.txt" dist/robots.txt; then ok=1; break; fi
+            fi
+            sleep 10
+          done
+          [ -n "$via_cloudflare" ] || not_connected "ni dosegljiv"
+          [ -n "$ok" ] || { echo "::error::$origin/robots.txt se ne ujema z zgrajenim (deploy ni prišel na domeno)."; exit 1; }
+          status=$(curl -sS -m 20 -o /dev/null -D "$RUNNER_TEMP/h" -w '%{http_code}' "$origin/")
+          [ "$status" = 200 ] || { echo "::error::$origin/ vrne $status."; exit 1; }
+          if [ "$SITE_NOINDEX" = true ] && ! grep -qi '^x-robots-tag:.*noindex' "$RUNNER_TEMP/h"; then
+            echo "::error::$origin/ nima X-Robots-Tag: noindex (noindex: true)."; exit 1
+          fi
+          { echo "### Produkcija"; echo "$origin/ – 200, robots.txt enak zgrajenemu"; } >> "$GITHUB_STEP_SUMMARY"

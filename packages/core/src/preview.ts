@@ -32,3 +32,14 @@ export function detectSiteEnv(env: Record<string, string | undefined> = process.
   }
   return { env: 'production', reason: 'privzeto (ni SITE_ENV, CF_PAGES_BRANCH ne GITHUB_REF_NAME)' };
 }
+
+/**
+ * `SITE_NOINDEX=true`: produkcijski build, ki ga iskalniki ne smejo indeksirati (npr. izmišljen primer na javni domeni).
+ * Za razliko od preview builda robots.txt ostane odprt, da crawler noindex sploh vidi.
+ */
+export function detectNoindex(env: Record<string, string | undefined> = process.env): boolean {
+  const value = env.SITE_NOINDEX?.trim().toLowerCase();
+  if (!value || value === 'false' || value === '0') return false;
+  if (value === 'true' || value === '1') return true;
+  throw new Error(`[factory] SITE_NOINDEX mora biti true ali false, ne "${env.SITE_NOINDEX}".`);
+}
