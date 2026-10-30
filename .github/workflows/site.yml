@@ -3,7 +3,7 @@
 #
 #   jobs:
 #     site:
-#       uses: e-visuals-studio/factory-core/.github/workflows/site.yml@<commit SHA> # vX.Y.Z
+#       uses: e-visuals-studio/factory-core/.github/workflows/site.yml@vX.Y.Z # isti tag kot @e-visuals-studio/core (pnpm core:update)
 #       permissions:
 #         contents: read
 #

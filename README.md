@@ -36,12 +36,12 @@ GitHub Actions, brez deploya (Cloudflare Pages pride v fazi 4). Vsi workflowi im
 
 Build teče s `SITE_ENV=production`: na PR-ju je `GITHUB_REF_NAME` npr. `5/merge`, kar bi bil preview (noindex) in Lighthouse SEO bi padel. Lighthouse in Playwright uporabljata Chrome s slike `ubuntu-24.04` (`CHROME_PATH=/usr/bin/google-chrome`).
 
-**`.github/workflows/site.yml`** – reusable workflow za repozitorije strank: `install --frozen-lockfile`, `build`, `check`, `check:tokens`, `test`, `lighthouse`, na pushu v `main` še `check:todo` (preview build sme vsebovati TODO). Vhod `brief` nastavi `BRIEF` (`primer` v site-template, prazno pri strankah). Klic (pripet na commit taga):
+**`.github/workflows/site.yml`** – reusable workflow za repozitorije strank: `install --frozen-lockfile`, `build`, `check`, `check:tokens`, `test`, `lighthouse`, na pushu v `main` še `check:todo` (preview build sme vsebovati TODO). Vhod `brief` nastavi `BRIEF` (`primer` v site-template, prazno pri strankah). Klic na tagu, istem kot paket `@e-visuals-studio/core`:
 
 ```yaml
 jobs:
   site:
-    uses: e-visuals-studio/factory-core/.github/workflows/site.yml@<commit SHA> # vX.Y.Z
+    uses: e-visuals-studio/factory-core/.github/workflows/site.yml@vX.Y.Z # isti tag kot paket; posodobi ga pnpm core:update
     permissions:
       contents: read
     with:
@@ -121,7 +121,7 @@ const { brief, todos } = await loadBrief('brief.yaml'); // + preveri slike v ass
 **Zdaj: git tag.** Stran stranke namesti core neposredno iz tega (javnega) repozitorija:
 
 ```json
-"@e-visuals-studio/core": "github:e-visuals-studio/factory-core#v0.2.0&path:packages/core"
+"@e-visuals-studio/core": "github:e-visuals-studio/factory-core#v0.2.1&path:packages/core"
 ```
 
 pnpm ob namestitvi požene `prepare` (`tsc` → `dist/`). Ker pnpm 10 build skripte odvisnosti privzeto blokira, mora `pnpm-workspace.yaml` stranke dovoliti točno to referenco s commitom taga (ime paketa samo ne zadošča; pnpm ob napaki izpiše točen zapis):
@@ -131,7 +131,7 @@ onlyBuiltDependencies:
   - "@e-visuals-studio/core@https://codeload.github.com/e-visuals-studio/factory-core/tar.gz/<commit>#path:packages/core"
 ```
 
-V `site-template` oboje posodobi `pnpm core:update vX.Y.Z`.
+V `site-template` oboje, skupaj s klicem `site.yml@vX.Y.Z` v `.github/workflows/ci.yml`, posodobi `pnpm core:update vX.Y.Z`, zato sta paket in workflow vedno na istem tagu.
 
 **Izdaja nove verzije**
 
