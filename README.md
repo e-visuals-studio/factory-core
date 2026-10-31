@@ -19,8 +19,8 @@ Potrebuješ Node 22.23.4 (`nvm use`, glej `.nvmrc`; Astro 7.4 zahteva ≥ 22.23.
 | `pnpm check:tokens` | pade, če blok uporablja barve, arbitrary vrednosti ali Tailwind palete mimo tokenov |
 | `pnpm test` | enotni testi core (`node --test`): shema briefa, register licenc, preview, `factory-check-todo` |
 | `pnpm changeset` | zapiše spremembo za naslednjo izdajo (glej Distribucija) |
-| `pnpm lighthouse` | Lighthouse CI (mobilno, 3 tekme) na `playground/dist`, pade pod 95 v katerikoli kategoriji; potrebuje Chromium (`CHROME_PATH`) |
-| `pnpm lighthouse:umami` | build z Umami (lokalni stub skripte, lažen ID) + Lighthouse CI |
+| `pnpm lighthouse` | Lighthouse 13 (mobilno, 3 teki) na `playground/dist` prek `factory-lighthouse` (meje iz `lighthouserc.json`), pade pod 95 v katerikoli kategoriji; potrebuje Chromium (`CHROME_PATH`) |
+| `pnpm lighthouse:umami` | build z Umami (lokalni stub skripte, lažen ID) + `factory-lighthouse` |
 | `pnpm test:e2e` | Playwright testi analitike in privolitve: zgradi playground za `none`, `umami` in `ga4` (`playground/dist-e2e/`), zažene `astro preview` in preveri banner, Consent Mode, dogodke in preklic; Chromium iz `CHROME_PATH` ali `pnpm exec playwright install chromium` |
 
 ## CI
@@ -32,11 +32,11 @@ GitHub Actions; deploy strani strank na Cloudflare Workers (glej Deploy spodaj).
 | Job | Koraki |
 | --- | --- |
 | `build, testi, Lighthouse` | Node iz `.nvmrc`, pnpm prek corepacka, predpomnjen pnpm store, `pnpm install --frozen-lockfile`, `build`, `check`, `check:tokens`, `test`, `test:e2e`, `lighthouse` |
-| `varnost (gitleaks, pnpm audit)` | gitleaks CLI (uradna izdaja, preverjen SHA-256) na celotni zgodovini; `pnpm audit --prod --audit-level high` (pade pri high/critical) |
+| `varnost (gitleaks, pnpm audit)` | gitleaks CLI (uradna izdaja, preverjen SHA-256) na celotni zgodovini; `pnpm audit --audit-level high` – tudi devDependencies, ker tečejo v CI-ju (pade pri high/critical) |
 
 Build teče s `SITE_ENV=production`: na PR-ju je `GITHUB_REF_NAME` npr. `5/merge`, kar bi bil preview (noindex) in Lighthouse SEO bi padel. Lighthouse in Playwright uporabljata Chrome s slike `ubuntu-24.04` (`CHROME_PATH=/usr/bin/google-chrome`).
 
-**`.github/workflows/site.yml`** – reusable workflow za repozitorije strank. Job `site`: `install --frozen-lockfile`, `build`, `check`, `check:tokens`, `test`, `lighthouse`, na pushu v `main` še `check:todo` (preview build sme vsebovati TODO). Vhod `brief` nastavi `BRIEF` (`primer` v site-template, prazno pri strankah). Za njim deploy (glej Deploy). Klic na tagu, istem kot paket `@e-visuals-studio/core`:
+**`.github/workflows/site.yml`** – reusable workflow za repozitorije strank. Job `site`: `install --frozen-lockfile`, `pnpm audit --audit-level high` (tudi devDependencies), `build`, `check`, `check:tokens`, `test`, `lighthouse`, na pushu v `main` še `check:todo` (preview build sme vsebovati TODO). Vhod `brief` nastavi `BRIEF` (`primer` v site-template, prazno pri strankah). Za njim deploy (glej Deploy). Klic na tagu, istem kot paket `@e-visuals-studio/core`:
 
 ```yaml
 jobs:
@@ -136,6 +136,7 @@ const { brief, todos } = await loadBrief('brief.yaml'); // + preveri slike v ass
 | Ukaz | Kaj naredi |
 | --- | --- |
 | `factory-check-tokens [mapa …]` | pravilo »samo tokeni« (privzeto `./src`) |
+| `factory-lighthouse [lighthouserc.json]` | Lighthouse 13 na zgrajeni strani: statični strežnik za `ci.collect.staticDistDir`, `numberOfRuns` tekov na URL, meje `categories:*` (`minScore`, `aggregationMethod`: `median`/`optimistic`/`pessimistic`, privzeto `optimistic` kot Lighthouse CI). Chrome iz `CHROME_PATH`, poročila v `.lighthouseci/`. Paket `lighthouse` je neobvezen peerDependency (devDependency v repozitoriju). Nadomešča `lhci autorun` (`@lhci/cli` ni vzdrževan, 6× high v odvisnostih). |
 | `factory-check-todo [dist] [datoteka …]` | pade, če `dist` ali naštete datoteke (`brief.yaml`, `assets.licenses.yaml`) vsebujejo `TODO`; preview build (`robots.txt` z `Disallow: /`) preskoči |
 | `factory-placeholders [--tokens f] [--out mapa] [ime:ŠxV …]` | placeholder slike iz barv tokenov (nikoli slike s spleta) |
 | `factory-tokens [tokens.json] [--out theme.css]` | tema iz tokenov in preverjanje kontrasta |

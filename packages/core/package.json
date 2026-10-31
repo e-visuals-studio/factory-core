@@ -47,7 +47,8 @@
     "factory-tokens": "./dist/tokens/cli.js",
     "factory-check-tokens": "./dist/cli/check-tokens.js",
     "factory-check-todo": "./dist/cli/check-todo.js",
-    "factory-placeholders": "./dist/cli/placeholders.js"
+    "factory-placeholders": "./dist/cli/placeholders.js",
+    "factory-lighthouse": "./dist/cli/lighthouse.js"
   },
   "files": [
     "dist",
@@ -61,7 +62,8 @@
     "test": "node --test test/*.test.ts"
   },
   "peerDependencies": {
-    "astro": "^7.2.8"
+    "astro": "^7.2.8",
+    "lighthouse": "^13.5.0"
   },
   "dependencies": {
     "@astrojs/rss": "^4.0.19",
@@ -78,5 +80,10 @@
     "@types/node": "^22.0.0",
     "astro": "^7.4.2",
     "typescript": "^5.9.3"
+  },
+  "peerDependenciesMeta": {
+    "lighthouse": {
+      "optional": true
+    }
   }
 }

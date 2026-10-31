@@ -11,15 +11,15 @@
     "dev": "pnpm --filter playground dev",
     "check": "pnpm -r run check",
     "check:tokens": "node packages/core/src/cli/check-tokens.ts packages/core/src playground/src",
-    "lighthouse": "lhci autorun",
-    "lighthouse:umami": "SITE_ENV=production ANALYTICS_PROVIDER=umami UMAMI_SCRIPT_URL=/lhci-umami-stub.js UMAMI_WEBSITE_ID=00000000-0000-0000-0000-000000000000 SITE_URL=http://localhost pnpm build && cp playground/lhci/umami-stub.js playground/dist/lhci-umami-stub.js && lhci autorun",
+    "lighthouse": "node packages/core/src/cli/lighthouse.ts",
+    "lighthouse:umami": "SITE_ENV=production ANALYTICS_PROVIDER=umami UMAMI_SCRIPT_URL=/lhci-umami-stub.js UMAMI_WEBSITE_ID=00000000-0000-0000-0000-000000000000 SITE_URL=http://localhost pnpm build && cp playground/lhci/umami-stub.js playground/dist/lhci-umami-stub.js && node packages/core/src/cli/lighthouse.ts",
     "test:e2e": "node e2e/build.ts && playwright test",
     "test": "pnpm --filter @e-visuals-studio/core test",
     "changeset": "changeset"
   },
   "devDependencies": {
     "@changesets/cli": "^3.0.3",
-    "@lhci/cli": "^0.15.1",
-    "@playwright/test": "^1.64.1"
+    "@playwright/test": "^1.64.1",
+    "lighthouse": "^13.5.0"
   }
 }
